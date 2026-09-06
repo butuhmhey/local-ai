@@ -38,5 +38,7 @@
       "url": "/#models",
       "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
     }
-  ]
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
 }
