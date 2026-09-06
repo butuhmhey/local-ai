@@ -5,6 +5,9 @@
 /** Chat message roles */
 export type MessageRole = 'user' | 'assistant' | 'system';
 
+/** Alias for ChatMessage */
+export type Message = ChatMessage;
+
 /** Chat message */
 export interface ChatMessage {
   id: string;
@@ -27,6 +30,12 @@ export interface ChatSession {
   messageCount: number;
   compactedAt?: number;
   settings?: ChatSessionSettings;
+  memory?: {
+    level0: MemoryLayer[];
+    level1: MemoryLayer[];
+    level2: MemoryLayer[];
+    facts: Fact[];
+  };
 }
 
 /** Chat session settings */
@@ -71,7 +80,32 @@ export interface MemoryLayer {
   extractedFacts: Fact[];
 }
 
+/** Memory summary (alias for MemoryLayer levels 1-2) */
+export interface MemorySummary {
+  id: string;
+  chatId: string;
+  level: 1 | 2;
+  content: string;
+  tokens: number;
+  timestamp: number;
+  messageCount: number;
+  sourceRange?: { start: number; end: number };
+}
+
 /** Extracted fact */
+export interface MemoryFact {
+  id: string;
+  chatId: string;
+  entity: string;
+  relation: string;
+  value: string;
+  confidence: number;
+  sourceMessageIds: string[];
+  extractedAt?: number;
+  timestamp: number;
+}
+
+/** Fact (storage format) */
 export interface Fact {
   id: string;
   chatId: string;
@@ -230,8 +264,8 @@ export interface ImportFile {
 /** WebGPU support check */
 export interface GPUInfo {
   supported: boolean;
-  adapter?: GPUAdapter;
-  device?: GPUDevice;
+  adapter?: any;
+  device?: any;
   error?: string;
 }
 
@@ -246,4 +280,14 @@ export interface CompactResult {
   layersCreated: number;
   factsExtracted: number;
   message?: string;
+}
+
+/** Memory stats for display */
+export interface MemoryStats {
+  level0Count: number;
+  level1Count: number;
+  level2Count: number;
+  factCount: number;
+  totalTokens: number;
+  compressionRatio: number;
 }

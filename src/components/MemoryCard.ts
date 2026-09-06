@@ -10,7 +10,7 @@ export interface MemoryCardOptions {
   /** Memory layer type */
   layer: 'level0' | 'level1' | 'level2' | 'facts';
   /** Data to display */
-  data: MemorySummary[] | MemoryFact[];
+  data: (MemorySummary | MemoryFact)[];
   /** Click handler for items */
   onItemClick?: (item: MemorySummary | MemoryFact) => void;
   /** Edit handler for facts */
@@ -125,7 +125,7 @@ export class MemoryCard {
     target.innerHTML = '';
 
     if (this.options.data.length === 0) {
-      const empty = createElement('div', { class: 'memory-card-empty', children: [this.options.emptyMessage] });
+      const empty = createElement('div', { class: 'memory-card-empty', children: [this.options.emptyMessage ?? 'No data'] });
       target.appendChild(empty);
       return;
     }
@@ -204,7 +204,7 @@ export class MemoryCard {
         class: 'action-btn edit-btn',
         'aria-label': 'Edit fact',
         children: ['✏️'],
-        onClick: (e) => {
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.editFact(fact);
         },
@@ -214,7 +214,7 @@ export class MemoryCard {
         class: 'action-btn delete-btn',
         'aria-label': 'Delete fact',
         children: ['🗑️'],
-        onClick: (e) => {
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.deleteFact(fact);
         },
@@ -266,7 +266,7 @@ export class MemoryCard {
         class: 'action-btn view-btn',
         'aria-label': 'View full summary',
         children: ['👁️'],
-        onClick: (e) => {
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.viewSummary(summary);
         },
@@ -276,7 +276,7 @@ export class MemoryCard {
         class: 'action-btn delete-btn',
         'aria-label': 'Delete summary',
         children: ['🗑️'],
-        onClick: (e) => {
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.deleteSummary(summary);
         },

@@ -4,18 +4,15 @@
 
 import { createElement, formatBytes, formatNumber } from '../utils/helpers.js';
 import { ModelSelector } from '../components/ModelSelector.js';
-import { ModelRegistry, type ModelInfo } from '../models/modelRegistry.js';
-import { CacheEngine } from '../services/cacheEngine.js';
-import { WebLLMEngine } from '../services/webllmEngine.js';
-import { StorageEngine } from '../services/storageEngine.js';
+import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
+import { cacheEngine } from '../services/cacheEngine.js';
+import { webllmEngine } from '../services/webllmEngine.js';
+import { storageEngine } from '../services/storageEngine.js';
 
 export class ModelLibraryPage {
-  private element: HTMLElement;
-  private modelSelector: ModelSelector;
-  private modelCardsContainer: HTMLElement;
-  private cacheEngine: CacheEngine;
-  private webllmEngine: WebLLMEngine;
-  private storageEngine: StorageEngine;
+  private element!: HTMLElement;
+  private modelSelector!: ModelSelector;
+  private modelCardsContainer!: HTMLElement;
   private allModels: ModelInfo[] = [];
   private filteredModels: ModelInfo[] = [];
   private currentFilters = {
@@ -26,10 +23,7 @@ export class ModelLibraryPage {
   };
 
   constructor() {
-    this.cacheEngine = CacheEngine.getInstance();
-    this.webllmEngine = WebLLMEngine.getInstance();
-    this.storageEngine = StorageEngine.getInstance();
-    this.allModels = ModelRegistry.getAllModels();
+    this.allModels = modelRegistry.getAllModels();
     this.filteredModels = [...this.allModels];
     this.element = this.createElement();
     this.bindEvents();
@@ -101,28 +95,28 @@ export class ModelLibraryPage {
 
   private syncFiltersFromSelector(): void {
     this.currentFilters = {
-      ram: this.modelSelector['options'].filterRAM || 0,
-      category: this.modelSelector['options'].filterCategory || '',
-      uncensored: this.modelSelector['options'].showUncensoredOnly || false,
-      search: this.modelSelector['searchInput']?.value?.toLowerCase().trim() || '',
+      ram: (this.modelSelector as any).options?.filterRAM || 0,
+      category: (this.modelSelector as any).options?.filterCategory || '',
+      uncensored: (this.modelSelector as any).options?.showUncensoredOnly || false,
+      search: (this.modelSelector as any).searchInput?.value?.toLowerCase().trim() || '',
     };
   }
 
   private async updateDownloadedStatus(): Promise<void> {
     // Get downloaded models from cache engine
-    const cachedModels = await this.cacheEngine.getCachedModels();
+    const cachedModels = await cacheEngine.getCachedModels();
     const cachedIds = new Set(cachedModels.map(m => m.modelId));
 
-    // Update model downloaded status
+    // Update model downloaded status (add temporary property)
     for (const model of this.allModels) {
-      model.downloaded = cachedIds.has(model.id);
+      (model as any).downloaded = cachedIds.has(model.id);
     }
 
     // Update stats
-    const downloadedCount = this.allModels.filter(m => m.downloaded).length;
+    const downloadedCount = this.allModels.filter(m => (m as any).downloaded).length;
     const totalSizeBytes = this.allModels
-      .filter(m => m.downloaded)
-      .reduce((sum, m) => sum + m.downloadSizeMB * 1024 * 1024, 0);
+      .filter(m => (m as any).downloaded)
+      .reduce((sum, m) => sum + (m.downloadSizeMB ?? 0) * 1024 * 1024, 0);
 
     const downloadedEl = this.element.querySelector('#downloaded-count');
     const sizeEl = this.element.querySelector('#total-size');
@@ -138,7 +132,7 @@ export class ModelLibraryPage {
     let models = [...this.allModels];
 
     if (this.currentFilters.ram) {
-      models = models.filter(m => m.vramGB <= this.currentFilters.ram);
+      models = models.filter(m => m.ramGB <= this.currentFilters.ram);
     }
     if (this.currentFilters.category) {
       models = models.filter(m => m.category === this.currentFilters.category);
@@ -169,7 +163,9 @@ export class ModelLibraryPage {
 
     // Sort: downloaded first, then by name
     models.sort((a, b) => {
-      if (a.downloaded !== b.downloaded) return b.downloaded ? 1 : -1;
+      const aDownloaded = (a as any).downloaded;
+      const bDownloaded = (b as any).downloaded;
+      if (aDownloaded !== bDownloaded) return bDownloaded ? 1 : -1;
       return a.name.localeCompare(b.name);
     });
 
@@ -180,8 +176,9 @@ export class ModelLibraryPage {
   }
 
   private createModelCard(model: ModelInfo): HTMLElement {
+    const isDownloaded = (model as any).downloaded;
     const card = createElement('div', {
-      class: `model-card ${model.downloaded ? 'downloaded' : ''} ${model.uncensored ? 'uncensored' : ''}`,
+      class: `model-card ${isDownloaded ? 'downloaded' : ''} ${model.uncensored ? 'uncensored' : ''}`,
       'data-model-id': model.id,
     });
 
@@ -197,7 +194,7 @@ export class ModelLibraryPage {
     if (model.category) {
       badges.appendChild(createElement('span', { class: `badge badge-category badge-${model.category}`, children: [model.category] }));
     }
-    if (model.downloaded) {
+    if (isDownloaded) {
       badges.appendChild(createElement('span', { class: 'badge badge-downloaded', children: ['Downloaded'] }));
     }
     header.appendChild(badges);
@@ -208,10 +205,10 @@ export class ModelLibraryPage {
     // Specs
     const specs = createElement('div', { class: 'model-card-specs' });
     const specItems = [
-      { label: 'VRAM', value: `${model.vramGB} GB`, icon: '💾' },
-      { label: 'Context', value: formatNumber(model.contextWindow), icon: '📏' },
-      { label: 'Size', value: formatBytes(model.downloadSizeMB * 1024 * 1024), icon: '📦' },
-      { label: 'Architecture', value: model.architecture || 'Transformer', icon: '🏗️' },
+      { label: 'VRAM', value: `${model.ramGB} GB`, icon: '💾' },
+      { label: 'Context', value: formatNumber(model.contextWindow ?? 4096), icon: '📏' },
+      { label: 'Size', value: formatBytes((model.downloadSizeMB ?? 0) * 1024 * 1024), icon: '📦' },
+      { label: 'Architecture', value: (model as any).architecture || 'Transformer', icon: '🏗️' },
     ];
     for (const spec of specItems) {
       const specEl = createElement('div', { class: 'spec-item' });
@@ -226,7 +223,7 @@ export class ModelLibraryPage {
     // Actions
     const actions = createElement('div', { class: 'model-card-actions' });
 
-    if (!model.downloaded) {
+    if (!isDownloaded) {
       const downloadBtn = createElement('button', {
         class: 'btn btn-primary download-btn',
         type: 'button',
@@ -275,14 +272,15 @@ export class ModelLibraryPage {
     if (downloadBtn) downloadBtn.disabled = true;
 
     try {
-      await this.webllmEngine.loadModel(model.id, (progress) => {
-        progressFill.style.width = `${progress * 100}%`;
-        progressText.textContent = `${Math.round(progress * 100)}%`;
+      await webllmEngine.loadModel(model.id, (progress) => {
+        const p = typeof progress === 'number' ? progress : progress?.progress ?? 0;
+        progressFill.style.width = `${p * 100}%`;
+        progressText.textContent = `${Math.round(p * 100)}%`;
       });
 
       // Mark as downloaded
-      model.downloaded = true;
-      await this.cacheEngine.cacheModel(model.id);
+      (model as any).downloaded = true;
+      // Model is cached by WebLLM engine automatically
 
       // Update UI
       this.updateDownloadedStatus();
@@ -302,8 +300,9 @@ export class ModelLibraryPage {
     if (!confirm(`Remove ${model.name} from local cache?`)) return;
 
     try {
-      await this.cacheEngine.removeModel(model.id);
-      model.downloaded = false;
+      // Remove from WebLLM cache via cacheEngine
+      await cacheEngine.removeModel(model.id);
+      (model as any).downloaded = false;
 
       this.updateDownloadedStatus();
       this.renderModelCards();

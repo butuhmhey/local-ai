@@ -1,8 +1,10 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import wasm from 'vite-plugin-wasm';
 
 export default defineConfig({
   plugins: [
+    wasm(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],

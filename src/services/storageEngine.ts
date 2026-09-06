@@ -292,7 +292,7 @@ export class StorageEngine {
   // ===== Messages =====
 
   /** Add a message */
-  async addMessage(message: Omit<ChatMessage, 'id' | 'timestamp'> & { timestamp?: number }): Promise<ChatMessage> {
+  async addMessage(message: Omit<ChatMessage, 'id' | 'timestamp'> & { chatId: string; timestamp?: number }): Promise<ChatMessage> {
     const db = await this.ensureDB();
     const now = message.timestamp ?? Date.now();
     const newMsg: StoredMessage = {
@@ -395,6 +395,46 @@ export class StorageEngine {
   async deleteMemory(id: string): Promise<void> {
     const db = await this.ensureDB();
     await db.delete('memories', id);
+  }
+
+  /** Delete a memory item (memory layer or fact) */
+  async deleteMemoryItem(chatId: string, id: string): Promise<void> {
+    const db = await this.ensureDB();
+    // Try to delete from memories first
+    const memory = await db.get('memories', id);
+    if (memory) {
+      await db.delete('memories', id);
+      return;
+    }
+    // Try to delete from facts
+    const fact = await db.get('facts', id);
+    if (fact) {
+      await db.delete('facts', id);
+      return;
+    }
+    throw new Error(`Memory item ${id} not found`);
+  }
+
+  /** Clear all memory for a chat */
+  async clearMemory(chatId: string): Promise<void> {
+    const db = await this.ensureDB();
+    const tx = db.transaction(['memories', 'facts'], 'readwrite');
+
+    // Delete memories
+    const memIndex = tx.objectStore('memories').index('by-chatId');
+    const memKeys = await memIndex.getAllKeys(chatId);
+    for (const key of memKeys) {
+      await tx.objectStore('memories').delete(key);
+    }
+
+    // Delete facts
+    const factIndex = tx.objectStore('facts').index('by-chatId');
+    const factKeys = await factIndex.getAllKeys(chatId);
+    for (const key of factKeys) {
+      await tx.objectStore('facts').delete(key);
+    }
+
+    await tx.done;
   }
 
   /** Delete all memories for a chat */
@@ -587,7 +627,7 @@ export class StorageEngine {
         role: msg.role,
         content: msg.content,
         tokens: msg.tokens ?? 0,
-        timestamp: msg.timestamp ?? now,
+        timestamp: (msg as any).timestamp ?? now,
         isCompacted: msg.isCompacted ?? false,
         parentSummaryId: msg.parentSummaryId,
         modelId: msg.modelId,
@@ -649,6 +689,151 @@ export class StorageEngine {
     await tx.done;
     // Re-initialize default settings
     await this.ensureDefaultSettings();
+  }
+
+  /** Export all data for backup */
+  async exportAllData(): Promise<{
+    chats: ChatSession[];
+    messages: ChatMessage[];
+    memories: MemoryLayer[];
+    facts: Fact[];
+    models: StoredModel[];
+    settings: Record<string, unknown>;
+  }> {
+    const db = await this.ensureDB();
+    const [chats, messages, memories, facts, models, settings] = await Promise.all([
+      this.getAllChats(),
+      this.getAllMessages(),
+      this.getAllMemories(),
+      this.getAllFacts(),
+      db.getAll('models'),
+      db.getAll('settings'),
+    ]);
+
+    const settingsObj: Record<string, unknown> = {};
+    for (const s of settings) {
+      settingsObj[s.key] = s.value;
+    }
+
+    return { chats, messages, memories, facts, models, settings: settingsObj };
+  }
+
+  /** Get all messages across all chats */
+  async getAllMessages(): Promise<ChatMessage[]> {
+    const db = await this.ensureDB();
+    const stored = await db.getAll('messages');
+    return stored.map(this.toChatMessage).sort((a, b) => a.timestamp - b.timestamp);
+  }
+
+  /** Get all memories across all chats */
+  async getAllMemories(): Promise<MemoryLayer[]> {
+    const db = await this.ensureDB();
+    const stored = await db.getAll('memories');
+    return stored.map(this.toMemoryLayer).sort((a, b) => a.timestamp - b.timestamp);
+  }
+
+  /** Get all facts across all chats */
+  async getAllFacts(): Promise<Fact[]> {
+    const db = await this.ensureDB();
+    const stored = await db.getAll('facts');
+    return stored.map(this.toFact).sort((a, b) => b.confidence - a.confidence);
+  }
+
+  /** Import all data from backup */
+  async importAllData(data: {
+    chats: ChatSession[];
+    messages: (ChatMessage & { chatId: string })[];
+    memories: MemoryLayer[];
+    facts: Fact[];
+    models: StoredModel[];
+    settings: Record<string, unknown>;
+  }): Promise<void> {
+    const db = await this.ensureDB();
+    const tx = db.transaction(['chats', 'messages', 'memories', 'facts', 'models', 'settings'], 'readwrite');
+
+    // Clear existing data first (except settings will be overwritten)
+    await Promise.all([
+      tx.objectStore('chats').clear(),
+      tx.objectStore('messages').clear(),
+      tx.objectStore('memories').clear(),
+      tx.objectStore('facts').clear(),
+      tx.objectStore('models').clear(),
+    ]);
+
+    // Import chats
+    for (const chat of data.chats) {
+      const storedChat: StoredChat = {
+        id: chat.id,
+        title: chat.title,
+        modelId: chat.modelId,
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+        messageCount: chat.messageCount,
+        compactedAt: chat.compactedAt,
+        settings: chat.settings,
+      };
+      await tx.objectStore('chats').put(storedChat);
+    }
+
+    // Import messages
+    for (const msg of data.messages) {
+      const storedMsg: StoredMessage = {
+        id: msg.id,
+        chatId: msg.chatId || '', // chatId should be present
+        role: msg.role,
+        content: msg.content,
+        tokens: msg.tokens ?? 0,
+        timestamp: msg.timestamp,
+        isCompacted: msg.isCompacted ?? false,
+        parentSummaryId: msg.parentSummaryId,
+        modelId: msg.modelId,
+      };
+      await tx.objectStore('messages').put(storedMsg);
+    }
+
+    // Import memories
+    for (const mem of data.memories) {
+      const storedMem: StoredMemory = {
+        id: mem.id,
+        chatId: mem.chatId,
+        level: mem.level,
+        content: mem.content,
+        tokens: mem.tokens,
+        facts: mem.extractedFacts,
+        sourceMessageIds: mem.sourceMessageIds,
+        createdAt: mem.timestamp,
+      };
+      await tx.objectStore('memories').put(storedMem);
+    }
+
+    // Import facts
+    for (const fact of data.facts) {
+      const storedFact: StoredFact = {
+        id: fact.id,
+        chatId: fact.chatId,
+        entity: fact.entity,
+        relation: fact.relation,
+        value: fact.value,
+        confidence: fact.confidence,
+        sourceMessageId: fact.sourceMessageId,
+        sourceMemoryId: fact.sourceMemoryId,
+        createdAt: fact.createdAt,
+        updatedAt: fact.updatedAt,
+      };
+      await tx.objectStore('facts').put(storedFact);
+    }
+
+    // Import models
+    for (const model of data.models) {
+      await tx.objectStore('models').put(model);
+    }
+
+    // Import settings
+    for (const [key, value] of Object.entries(data.settings)) {
+      await tx.objectStore('settings').put({ key, value });
+    }
+
+    await tx.done;
   }
 
   /** Get database size estimate */

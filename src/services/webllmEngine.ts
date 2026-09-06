@@ -30,13 +30,14 @@ export class WebLLMEngine {
   }
 
   /** Get WebGPU adapter info */
-  static async getGPUInfo(): Promise<{ supported: boolean; adapter?: GPUAdapter; error?: string }> {
+  static async getGPUInfo(): Promise<{ supported: boolean; adapter?: any; error?: string }> {
     if (!this.isWebGPUSupported()) {
       return { supported: false, error: 'WebGPU not supported in this browser' };
     }
 
     try {
-      const adapter = await navigator.gpu.requestAdapter({
+      const nav = navigator as Navigator & { gpu: { requestAdapter: (options: any) => Promise<any> } };
+      const adapter = await nav.gpu.requestAdapter({
         powerPreference: 'high-performance',
       });
 
@@ -222,7 +223,8 @@ export class WebLLMEngine {
 
     // WebLLM provides context usage via getMessageStats
     try {
-      const stats = this.engine.getMessageStats?.();
+      const engineWithStats = this.engine as MLCEngineInterface & { getMessageStats?: () => { prompt_tokens?: number } };
+      const stats = engineWithStats.getMessageStats?.();
       if (stats) {
         const used = stats.prompt_tokens ?? 0;
         const total = this.contextWindow;

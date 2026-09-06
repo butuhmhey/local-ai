@@ -14,14 +14,49 @@ import { WebLLMEngine } from './webllmEngine.js';
 import { StorageEngine } from './storageEngine.js';
 import { generateId } from '../utils/helpers.js';
 
+/** Extended ImportResult with success/error for component usage */
+export interface ImportResultExtended {
+  success: boolean;
+  chats: ChatSession[];
+  totalMessages: number;
+  format: ChatFormat;
+  fileName: string;
+  warnings: string[];
+  error?: string;
+}
+
+// Re-export types from types/index.ts for components
+export type { ImportFile, ImportResult };
+
+/** Import preview for UI */
+export interface ImportPreview {
+  format: ChatFormat;
+  confidence: number;
+  messageCount: number;
+  sample: Array<{ role: string; content: string }>;
+}
+
 /** Import Engine Class */
 export class ImportEngine {
   private webllm: WebLLMEngine;
   private storage: StorageEngine;
+  private static instance: ImportEngine | null = null;
 
   constructor(webllm: WebLLMEngine, storage: StorageEngine) {
     this.webllm = webllm;
     this.storage = storage;
+  }
+
+  static getInstance(): ImportEngine {
+    if (!ImportEngine.instance) {
+      throw new Error('ImportEngine not initialized');
+    }
+    return ImportEngine.instance;
+  }
+
+  static initialize(webllm: WebLLMEngine, storage: StorageEngine): ImportEngine {
+    ImportEngine.instance = new ImportEngine(webllm, storage);
+    return ImportEngine.instance;
   }
 
   /** Detect format from file content and filename */
@@ -510,7 +545,7 @@ JSON:`;
   }
 
   /** Process imported files and create chat sessions */
-  async import(files: File[], targetChatId?: string): Promise<ImportResult> {
+  async import(files: File[], targetChatId?: string): Promise<ImportResultExtended> {
     const importFiles: ImportFile[] = [];
     const allMessages: ChatMessage[] = [];
     const warnings: string[] = [];
@@ -564,8 +599,9 @@ JSON:`;
     }
 
     return {
-      sessions: [chat],
-      messages: allMessages,
+      success: true,
+      chats: [chat],
+      totalMessages: allMessages.length,
       format: importFiles[0]?.format || 'unknown',
       fileName: importFiles.map(f => f.file.name).join(', '),
       warnings,
@@ -643,3 +679,9 @@ JSON:`;
     }).join('\n\n');
   }
 }
+
+// Export singleton (will be properly initialized in main.ts)
+export const importEngine = new ImportEngine(
+  { isReady: () => false, chat: async () => '', streamChat: async function* () {}, loadModel: async () => {}, switchModel: async () => {}, getContextUsage: () => ({ used: 0, total: 4096, percentage: 0 }), estimateTokens: (text: string) => Math.ceil(text.length / 4), generateSummary: async () => '', extractFacts: async () => [] } as any,
+  { getChat: async () => null, getMessages: async () => [], addMessage: async () => '', createChat: async () => ({ id: '', title: '', modelId: '', createdAt: 0, updatedAt: 0 }), updateChat: async () => {}, deleteMessagesForChat: async () => {}, exportChat: async () => null, exportAllData: async () => ({}), importAllData: async () => {}, clearAll: async () => {}, deleteMemoryItem: async () => {}, clearMemory: async () => {} } as any
+);

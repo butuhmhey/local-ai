@@ -83,34 +83,34 @@ async function initializeServices(): Promise<AppState['services']> {
 /**
  * Initialize all pages
  */
-function initializePages(services: AppState['services']): AppState['pages'] {
+function initializePages(): AppState['pages'] {
   return {
-    chat: new ChatPage(services),
-    models: new ModelLibraryPage(services),
-    import: new ImportExportPage(services),
-    memory: new MemoryPage(services),
-    settings: new SettingsPage(services),
+    chat: new ChatPage(),
+    models: new ModelLibraryPage(),
+    import: new ImportExportPage(),
+    memory: new MemoryPage(),
+    settings: new SettingsPage(),
   };
 }
 
 /**
  * Render a page into the route outlet
  */
-function renderPage(page: keyof AppState['pages'], params?: Record<string, string>): void {
+async function renderPage(page: keyof AppState['pages'], params?: Record<string, string>): Promise<void> {
   const pageInstance = app.pages[page];
   routeOutlet.innerHTML = '';
-  routeOutlet.appendChild(pageInstance.render(params));
+  routeOutlet.appendChild(pageInstance.getElement());
 
-  // Call page's onMount if it exists
-  if (typeof pageInstance.onMount === 'function') {
-    pageInstance.onMount(params);
+  // Call page's onShow if it exists
+  if (typeof pageInstance.onShow === 'function') {
+    await pageInstance.onShow(params);
   }
 }
 
 /**
  * Handle route change
  */
-function navigate(route: Route, params?: Record<string, string>): void {
+async function navigate(route: Route, params?: Record<string, string>): Promise<void> {
   // Update URL hash
   const hash = params ? `#${route}/${Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&')}` : `#${route}`;
   window.location.hash = hash;
@@ -130,9 +130,20 @@ function navigate(route: Route, params?: Record<string, string>): void {
   // Close mobile sidebar
   sidebar.classList.remove('open');
 
+  // Update page title
+  const titles: Record<Route, string> = {
+    chat: 'Chat',
+    models: 'Models',
+    import: 'Import/Export',
+    memory: 'Memory',
+    settings: 'Settings',
+  };
+  const titleEl = document.getElementById('page-title');
+  if (titleEl) titleEl.textContent = titles[route] || 'Local AI Chat';
+
   // Render the page
   app.currentRoute = route;
-  renderPage(route, params);
+  await renderPage(route, params);
 }
 
 /**
@@ -380,7 +391,7 @@ async function bootstrap(): Promise<void> {
     const services = await initializeServices();
 
     // Initialize pages
-    const pages = initializePages(services);
+    const pages = initializePages();
 
     // Set up global app state
     app = {
@@ -398,7 +409,7 @@ async function bootstrap(): Promise<void> {
 
     // Initial route
     const { route, params } = parseHash();
-    navigate(route, params);
+    await navigate(route, params);
 
     // Show ready toast
     showToast({ type: 'success', title: 'Local AI Chat ready', message: 'All systems initialized', duration: 3000 });
@@ -423,4 +434,4 @@ if (document.readyState === 'loading') {
 }
 
 // Export for testing
-export { app, navigate, showToast, parseHash };
+export { app, navigate, parseHash, showToast as showToastExport };

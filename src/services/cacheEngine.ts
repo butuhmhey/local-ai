@@ -94,9 +94,54 @@ export class CacheEngine {
 
     try {
       const cache = await caches.open('webllm-models');
-      return await cache.match(modelUrl);
+      const response = await cache.match(modelUrl);
+      return response ?? null;
     } catch {
       return null;
+    }
+  }
+
+  /** Get all cached model URLs */
+  async getCachedModels(): Promise<{ modelId: string; size: number }[]> {
+    if (!('caches' in window)) return [];
+
+    try {
+      const cache = await caches.open('webllm-models');
+      const keys = await cache.keys();
+      const results: { modelId: string; size: number }[] = [];
+      for (const req of keys) {
+        const response = await cache.match(req);
+        if (response) {
+          // Extract modelId from URL
+          const url = new URL(req.url);
+          const modelId = url.pathname.split('/').pop() || req.url;
+          // Estimate size from response
+          const size = parseInt(response.headers.get('content-length') || '0', 10);
+          results.push({ modelId, size });
+        }
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  }
+
+  /** Remove specific model from cache */
+  async removeModel(modelId: string): Promise<void> {
+    if (!('caches' in window)) return;
+
+    try {
+      const cache = await caches.open('webllm-models');
+      const keys = await cache.keys();
+      for (const req of keys) {
+        const url = new URL(req.url);
+        if (url.pathname.includes(modelId) || req.url.includes(modelId)) {
+          await cache.delete(req);
+          console.log('[CacheEngine] Removed model from cache:', modelId);
+        }
+      }
+    } catch (error) {
+      console.warn('[CacheEngine] Failed to remove model from cache:', error);
     }
   }
 
@@ -109,6 +154,19 @@ export class CacheEngine {
       console.log('[CacheEngine] Model cache cleared');
     } catch (error) {
       console.warn('[CacheEngine] Failed to clear model cache:', error);
+    }
+  }
+
+  /** Clear all caches */
+  async clearAll(): Promise<void> {
+    if (!('caches' in window)) return;
+
+    try {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+      console.log('[CacheEngine] All caches cleared');
+    } catch (error) {
+      console.warn('[CacheEngine] Failed to clear caches:', error);
     }
   }
 

@@ -6,22 +6,19 @@ import { createElement, generateId, formatTime, escapeHtml, truncate } from '../
 import { MessageBubble, createStreamingBubble } from '../components/MessageBubble.js';
 import { ModelSelector, createCompactModelSelector } from '../components/ModelSelector.js';
 import { CompactIndicator } from '../components/CompactIndicator.js';
-import { WebLLMEngine } from '../services/webllmEngine.js';
-import { MemoryEngine } from '../services/memoryEngine.js';
-import { StorageEngine } from '../services/storageEngine.js';
-import { ModelRegistry } from '../models/modelRegistry.js';
-import type { Message, ChatSession, ModelInfo } from '../types/index.js';
+import { webllmEngine } from '../services/webllmEngine.js';
+import { memoryEngine } from '../services/memoryEngine.js';
+import { storageEngine } from '../services/storageEngine.js';
+import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
+import type { Message, ChatSession } from '../types/index.js';
 
 export class ChatPage {
-  private element: HTMLElement;
-  private webllmEngine: WebLLMEngine;
-  private memoryEngine: MemoryEngine;
-  private storageEngine: StorageEngine;
-  private modelSelector: ModelSelector;
-  private compactIndicator: CompactIndicator;
-  private chatContainer: HTMLElement;
-  private inputArea: HTMLTextAreaElement;
-  private sendBtn: HTMLButtonElement;
+  private element!: HTMLElement;
+  private modelSelector!: ModelSelector;
+  private compactIndicator!: CompactIndicator;
+  private chatContainer!: HTMLElement;
+  private inputArea!: HTMLTextAreaElement;
+  private sendBtn!: HTMLButtonElement;
   private currentChatId: string | null = null;
   private currentModel: ModelInfo | null = null;
   private isStreaming = false;
@@ -30,9 +27,6 @@ export class ChatPage {
   private pendingUserMessage: Message | null = null;
 
   constructor() {
-    this.webllmEngine = WebLLMEngine.getInstance();
-    this.memoryEngine = MemoryEngine.getInstance();
-    this.storageEngine = StorageEngine.getInstance();
     this.element = this.createElement();
     this.bindEvents();
     this.loadLastChat();
@@ -43,7 +37,7 @@ export class ChatPage {
   }
 
   /** Called when page is shown */
-  async onShow(): Promise<void> {
+  async onShow(params?: Record<string, string>): Promise<void> {
     await this.initModelSelector();
     if (this.currentChatId) {
       await this.loadChat(this.currentChatId);
@@ -68,30 +62,14 @@ export class ChatPage {
 
     // Create new chat
     const chatId = generateId();
-    const modelId = this.currentModel?.id || ModelRegistry.getDefaultModel()?.id || '';
+    const modelId = this.currentModel?.id || modelRegistry.getDefault(8)?.id || 'Llama-3.2-3B-Instruct-q4f16_1-MLC';
 
-    const chat: ChatSession = {
-      id: chatId,
+    const chat = await storageEngine.createChat({
       title: 'New Chat',
       modelId,
-      messages: [],
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      memory: {
-        level0: [],
-        level1: [],
-        level2: [],
-        facts: [],
-      },
-      settings: {
-        temperature: 0.7,
-        topP: 0.95,
-        maxTokens: 2048,
-      },
-    };
+    });
 
-    await this.storageEngine.saveChat(chat);
-    this.currentChatId = chatId;
+    this.currentChatId = chat.id;
     this.clearMessages();
     this.updateChatTitle('New Chat');
     this.compactIndicator.setChatId(chatId);
@@ -100,11 +78,11 @@ export class ChatPage {
   /** Load chat by ID */
   async loadChat(chatId: string): Promise<void> {
     try {
-      const chat = await this.storageEngine.getChat(chatId);
+      const chat = await storageEngine.getChat(chatId);
       if (!chat) throw new Error('Chat not found');
 
       this.currentChatId = chatId;
-      this.currentModel = ModelRegistry.getModel(chat.modelId) || null;
+      this.currentModel = modelRegistry.getById(chat.modelId) || null;
 
       // Update model selector
       if (this.currentModel) {
@@ -113,7 +91,8 @@ export class ChatPage {
 
       // Load messages
       this.clearMessages();
-      for (const msg of chat.messages) {
+      const messages = await storageEngine.getMessages(chatId);
+      for (const msg of messages) {
         this.addMessageBubble(msg, false);
       }
 
@@ -122,7 +101,7 @@ export class ChatPage {
 
       // Update compact indicator
       this.compactIndicator.setChatId(chatId);
-      this.compactIndicator.setMaxTokens(this.currentModel?.contextWindow || 4096);
+      this.compactIndicator.setMaxTokens(this.currentModel?.contextWindow ?? 4096);
 
       // Scroll to bottom
       this.scrollToBottom();
@@ -141,7 +120,7 @@ export class ChatPage {
         .map(b => b['options'].message)
         .filter(m => m.role !== 'system'); // Don't save system messages
 
-      const chat = await this.storageEngine.getChat(this.currentChatId);
+      const chat = await storageEngine.getChat(this.currentChatId);
       if (!chat) return;
 
       // Update title from first user message if still "New Chat"
@@ -153,12 +132,19 @@ export class ChatPage {
         }
       }
 
-      chat.messages = messages;
-      chat.title = title;
-      chat.updatedAt = Date.now();
-      chat.modelId = this.currentModel?.id || chat.modelId;
+      await storageEngine.updateChat(this.currentChatId, {
+        title,
+        modelId: this.currentModel?.id || chat.modelId,
+      });
 
-      await this.storageEngine.saveChat(chat);
+      // Save messages
+      // First delete existing messages
+      await storageEngine.deleteMessagesForChat(this.currentChatId);
+      // Then add new messages
+      for (const msg of messages) {
+        await storageEngine.addMessage({ ...msg, chatId: this.currentChatId });
+      }
+
       this.updateChatTitle(title);
     } catch (error) {
       console.error('[ChatPage] Failed to save chat:', error);
@@ -180,7 +166,7 @@ export class ChatPage {
     }
 
     // Check if model is loaded
-    if (!this.webllmEngine.isModelLoaded(this.currentModel.id)) {
+    if (!webllmEngine.isReady()) {
       await this.loadCurrentModel();
     }
 
@@ -215,21 +201,20 @@ export class ChatPage {
 
     try {
       // Build context with memory
-      const context = await this.memoryEngine.buildContextWindow(
+      const context = await memoryEngine.buildContextWindow(
         this.currentChatId!,
-        this.currentModel.contextWindow
+        this.currentModel.contextWindow ?? 4096
       );
 
       // Add current user message to context
-      context.messages.push(userMessage);
+      context.push(userMessage);
 
       // Stream response
       let fullResponse = '';
-      for await (const chunk of this.webllmEngine.streamChat(context.messages, {
+      for await (const chunk of webllmEngine.streamChat(context, {
         temperature: 0.7,
         topP: 0.95,
         maxTokens: 2048,
-        signal: this.abortController.signal,
       })) {
         fullResponse += chunk;
         streamingBubble.append(chunk);
@@ -314,7 +299,7 @@ export class ChatPage {
     if (this.currentModel?.id === model.id) return;
 
     this.currentModel = model;
-    this.compactIndicator.setMaxTokens(model.contextWindow);
+    this.compactIndicator.setMaxTokens(model.contextWindow ?? 4096);
 
     // If there's an active chat, switch model
     if (this.currentChatId && this.messageBubbles.size > 0) {
@@ -324,7 +309,7 @@ export class ChatPage {
         const messages = Array.from(this.messageBubbles.values())
           .map(b => b['options'].message);
 
-        await this.webllmEngine.switchModel(model.id, messages);
+        await webllmEngine.switchModel(model.id, messages);
         this.showToast(`Switched to ${model.name}`, 'success');
       } catch (error) {
         console.error('[ChatPage] Model switch failed:', error);
@@ -342,8 +327,9 @@ export class ChatPage {
     const loadingToast = this.showToast(`Loading ${this.currentModel.name}...`, 'info');
 
     try {
-      await this.webllmEngine.loadModel(this.currentModel.id, (progress) => {
-        loadingToast.textContent = `Loading ${this.currentModel!.name}: ${Math.round(progress * 100)}%`;
+      await webllmEngine.loadModel(this.currentModel.id, (progress: any) => {
+        const p = typeof progress === 'number' ? progress : progress?.progress ?? 0;
+        loadingToast.textContent = `Loading ${this.currentModel!.name}: ${Math.round(p * 100)}%`;
       });
       loadingToast.remove();
       this.showToast(`${this.currentModel.name} ready`, 'success');
@@ -362,7 +348,7 @@ export class ChatPage {
     const messages = Array.from(this.messageBubbles.values())
       .map(b => b['options'].message);
 
-    await this.memoryEngine.maybeCompact(messages, this.currentChatId);
+    await memoryEngine.maybeCompact(messages, this.currentChatId);
     this.compactIndicator.refresh();
   }
 
@@ -376,7 +362,7 @@ export class ChatPage {
     this.compactIndicator.setCompacting(true);
 
     try {
-      await this.memoryEngine.maybeCompact(messages, this.currentChatId);
+      await memoryEngine.maybeCompact(messages, this.currentChatId);
       this.showToast('Conversation compacted', 'success');
     } catch (error) {
       console.error('[ChatPage] Compact failed:', error);
@@ -470,7 +456,7 @@ export class ChatPage {
 
     // Load default model if none selected
     if (!this.currentModel) {
-      const defaultModel = ModelRegistry.getDefaultModel();
+      const defaultModel = modelRegistry.getDefault(8);
       if (defaultModel) {
         this.currentModel = defaultModel;
         this.modelSelector.setSelectedModel(defaultModel.id);
@@ -482,10 +468,10 @@ export class ChatPage {
   /** Load last active chat */
   private async loadLastChat(): Promise<void> {
     try {
-      const chats = await this.storageEngine.getAllChats();
+      const chats = await storageEngine.getAllChats();
       if (chats.length > 0) {
         // Sort by updatedAt desc
-        chats.sort((a, b) => b.updatedAt - a.updatedAt);
+        chats.sort((a: ChatSession, b: ChatSession) => b.updatedAt - a.updatedAt);
         this.currentChatId = chats[0].id;
       }
     } catch (error) {
@@ -522,7 +508,7 @@ export class ChatPage {
       placeholder: 'Type a message... (Shift+Enter for new line)',
       rows: 1,
       onInput: () => this.autoResizeTextarea(),
-      onKeydown: (e) => this.handleInputKeydown(e),
+      onKeydown: (e: KeyboardEvent) => this.handleInputKeydown(e),
     });
 
     this.sendBtn = createElement('button', {

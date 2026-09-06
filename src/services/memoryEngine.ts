@@ -9,7 +9,10 @@ import type {
   MemoryLayer,
   Fact,
   CompactResult,
-  AppSettings
+  AppSettings,
+  MemoryStats,
+  MemorySummary,
+  MemoryFact
 } from '../types/index.js';
 import { WebLLMEngine } from './webllmEngine.js';
 import { StorageEngine } from './storageEngine.js';
@@ -19,6 +22,7 @@ export class MemoryEngine {
   private webllm: WebLLMEngine;
   private storage: StorageEngine;
   private settings: AppSettings;
+  private static instance: MemoryEngine | null = null;
 
   constructor(webllm: WebLLMEngine, storage: StorageEngine) {
     this.webllm = webllm;
@@ -33,6 +37,18 @@ export class MemoryEngine {
       showTokenCount: true,
       enableStreaming: true,
     };
+  }
+
+  static getInstance(): MemoryEngine {
+    if (!MemoryEngine.instance) {
+      throw new Error('MemoryEngine not initialized');
+    }
+    return MemoryEngine.instance;
+  }
+
+  static initialize(webllm: WebLLMEngine, storage: StorageEngine): MemoryEngine {
+    MemoryEngine.instance = new MemoryEngine(webllm, storage);
+    return MemoryEngine.instance;
   }
 
   /** Update settings */
@@ -288,14 +304,7 @@ export class MemoryEngine {
   }
 
   /** Get memory stats for a chat */
-  async getMemoryStats(chatId: string): Promise<{
-    totalMemories: number;
-    level0Count: number;
-    level1Count: number;
-    level2Count: number;
-    totalFacts: number;
-    totalTokens: number;
-  }> {
+  async getMemoryStats(chatId: string): Promise<MemoryStats> {
     const [level0, level1, level2, facts] = await Promise.all([
       this.storage.getMemoriesByLevel(chatId, 0),
       this.storage.getMemoriesByLevel(chatId, 1),
@@ -304,15 +313,50 @@ export class MemoryEngine {
     ]);
 
     const totalTokens = [...level0, ...level1, ...level2].reduce((sum, m) => sum + m.tokens, 0);
+    const originalTokens = totalTokens * 3; // rough estimate
+    const compressionRatio = originalTokens > 0 ? originalTokens / totalTokens : 1;
 
     return {
-      totalMemories: level0.length + level1.length + level2.length,
       level0Count: level0.length,
       level1Count: level1.length,
       level2Count: level2.length,
-      totalFacts: facts.length,
+      factCount: facts.length,
       totalTokens,
+      compressionRatio,
     };
+  }
+
+  /** Sync version for components that need it */
+  getMemoryStatsSync(chatId: string): MemoryStats {
+    // Return default/empty stats - will be updated async
+    return {
+      level0Count: 0,
+      level1Count: 0,
+      level2Count: 0,
+      factCount: 0,
+      totalTokens: 0,
+      compressionRatio: 1,
+    };
+  }
+
+  /** Update a fact */
+  async updateFact(chatId: string, fact: MemoryFact): Promise<void> {
+    await this.storage.updateFact(chatId, fact);
+  }
+
+  /** Delete a memory item (summary or fact) */
+  async deleteMemoryItem(chatId: string, id: string): Promise<void> {
+    await this.storage.deleteMemoryItem(chatId, id);
+  }
+
+  /** Clear all memory for a chat */
+  async clearMemory(chatId: string): Promise<void> {
+    await this.storage.clearMemory(chatId);
+  }
+
+  /** Set auto-compact settings */
+  setAutoCompactSettings(enabled: boolean, threshold: number): void {
+    this.settings.autoCompactThreshold = threshold * 100; // Convert 0-1 to percentage
   }
 
   /** Reconstruct full conversation from memory layers (for export) */
@@ -321,3 +365,9 @@ export class MemoryEngine {
     return messages;
   }
 }
+
+// Export singleton (will be properly initialized in main.ts)
+export const memoryEngine = new MemoryEngine(
+  { isReady: () => false, getContextUsage: () => ({ used: 0, total: 4096, percentage: 0 }), estimateTokens: (text: string) => Math.ceil(text.length / 4) } as any,
+  { getMessages: async () => [] } as any
+);

@@ -189,7 +189,7 @@ export class ThemeEngine {
     // Handle selection
     menu.querySelectorAll('.dropdown-item').forEach(item => {
       item.addEventListener('click', () => {
-        const theme = item.dataset.theme as ThemeMode;
+        const theme = (item as HTMLElement).dataset.theme as ThemeMode;
         this.setTheme(theme);
         menu.classList.remove('open');
       });
@@ -198,7 +198,8 @@ export class ThemeEngine {
     // Update active state
     const updateActive = () => {
       menu.querySelectorAll('.dropdown-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.theme === this.currentTheme);
+        const el = item as HTMLElement;
+        el.classList.toggle('active', el.dataset.theme === this.currentTheme);
       });
     };
 

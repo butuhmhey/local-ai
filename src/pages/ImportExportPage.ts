@@ -4,21 +4,18 @@
 
 import { createElement, formatBytes, downloadFile, generateId, formatDate } from '../utils/helpers.js';
 import { ImportDropzone, type FilePreview } from '../components/ImportDropzone.js';
-import { ImportEngine, type ImportResult, type ImportPreview } from '../services/importEngine.js';
-import { StorageEngine } from '../services/storageEngine.js';
-import type { ChatSession, ChatFormat } from '../types/index.js';
+import { importEngine, type ImportPreview } from '../services/importEngine.js';
+import { storageEngine } from '../services/storageEngine.js';
+import type { ChatSession, ChatFormat, ImportResult, ExportFormat } from '../types/index.js';
+import type { ImportResultExtended } from '../services/importEngine.js';
 
 export class ImportExportPage {
-  private element: HTMLElement;
-  private importDropzone: ImportDropzone;
-  private exportSection: HTMLElement;
-  private storageEngine: StorageEngine;
-  private importEngine: ImportEngine;
-  private currentPreviews: FilePreview[] = [];
+  private element!: HTMLElement;
+  private importDropzone!: ImportDropzone;
+  private exportSection!: HTMLElement;
+  private currentPreviews: ImportPreview[] = [];
 
   constructor() {
-    this.storageEngine = StorageEngine.getInstance();
-    this.importEngine = ImportEngine.getInstance();
     this.element = this.createElement();
     this.bindEvents();
   }
@@ -76,7 +73,7 @@ export class ImportExportPage {
       'Export your chats to various formats for backup or migration to other platforms.'
     ]});
 
-    const exportForm = createElement('form', { class: 'export-form', onSubmit: (e) => this.handleExport(e) });
+    const exportForm = createElement('form', { class: 'export-form', onSubmit: (e: SubmitEvent) => this.handleExport(e) });
 
     // Chat selector
     const chatGroup = createElement('div', { class: 'form-group' });
@@ -139,7 +136,7 @@ export class ImportExportPage {
     if (!select) return;
 
     try {
-      const chats = await this.storageEngine.getAllChats();
+      const chats = await storageEngine.getAllChats();
       chats.sort((a, b) => b.updatedAt - a.updatedAt);
 
       // Preserve current selection
@@ -147,9 +144,11 @@ export class ImportExportPage {
 
       select.innerHTML = '<option value="">-- Choose a chat --</option>';
       for (const chat of chats) {
+        // Get message count from storage
+        const messages = await storageEngine.getMessages(chat.id);
         const option = createElement('option', {
           value: chat.id,
-          children: [`${chat.title} (${chat.messages.length} msgs, ${formatDate(chat.updatedAt)})`],
+          children: [`${chat.title} (${messages.length} msgs, ${formatDate(chat.updatedAt)})`],
         });
         select.appendChild(option);
       }
@@ -162,7 +161,7 @@ export class ImportExportPage {
     }
   }
 
-  private async handleImportComplete(result: ImportResult): Promise<void> {
+  private async handleImportComplete(result: ImportResultExtended): Promise<void> {
     if (result.success) {
       this.showToast(`Successfully imported ${result.chats.length} chat(s) with ${result.totalMessages} messages`, 'success');
       // Notify other pages
@@ -177,7 +176,7 @@ export class ImportExportPage {
 
     const form = e.target as HTMLFormElement;
     const chatId = (form.querySelector('#export-chat') as HTMLSelectElement).value;
-    const format = (form.querySelector('#export-format') as HTMLSelectElement).value as ChatFormat;
+    const format = (form.querySelector('#export-format') as HTMLSelectElement).value as ExportFormat;
     const includeMemory = (form.querySelector('#export-memory') as HTMLInputElement).checked;
     const includeMetadata = (form.querySelector('#export-metadata') as HTMLInputElement).checked;
 
@@ -191,8 +190,11 @@ export class ImportExportPage {
     btn.textContent = 'Exporting...';
 
     try {
-      const chat = await this.storageEngine.getChat(chatId);
+      const chat = await storageEngine.getChat(chatId);
       if (!chat) throw new Error('Chat not found');
+
+      // Get messages from storage
+      const messages = await storageEngine.getMessages(chatId);
 
       let content: string;
       let mimeType: string;
@@ -200,22 +202,22 @@ export class ImportExportPage {
 
       switch (format) {
         case 'json':
-          content = this.exportToJSON(chat, includeMemory, includeMetadata);
+          content = this.exportToJSON(chat, messages, includeMemory, includeMetadata);
           mimeType = 'application/json';
           extension = 'json';
           break;
         case 'markdown':
-          content = this.exportToMarkdown(chat, includeMemory, includeMetadata);
+          content = this.exportToMarkdown(chat, messages, includeMemory, includeMetadata);
           mimeType = 'text/markdown';
           extension = 'md';
           break;
         case 'csv':
-          content = this.exportToCSV(chat, includeMetadata);
+          content = this.exportToCSV(messages, includeMetadata);
           mimeType = 'text/csv';
           extension = 'csv';
           break;
         case 'txt':
-          content = this.exportToText(chat, includeMetadata);
+          content = this.exportToText(chat, messages, includeMetadata);
           mimeType = 'text/plain';
           extension = 'txt';
           break;
@@ -236,12 +238,12 @@ export class ImportExportPage {
     }
   }
 
-  private exportToJSON(chat: ChatSession, includeMemory: boolean, includeMetadata: boolean): string {
+  private exportToJSON(chat: ChatSession, messages: any[], includeMemory: boolean, includeMetadata: boolean): string {
     const exportData: any = {
       id: chat.id,
       title: chat.title,
       modelId: chat.modelId,
-      messages: chat.messages,
+      messages: messages,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
     };
@@ -257,18 +259,18 @@ export class ImportExportPage {
     return JSON.stringify(exportData, null, 2);
   }
 
-  private exportToMarkdown(chat: ChatSession, includeMemory: boolean, includeMetadata: boolean): string {
+  private exportToMarkdown(chat: ChatSession, messages: any[], includeMemory: boolean, includeMetadata: boolean): string {
     let md = `# ${chat.title}\n\n`;
 
     if (includeMetadata) {
       md += `**Model:** ${chat.modelId}  \n`;
       md += `**Created:** ${new Date(chat.createdAt).toLocaleString()}  \n`;
       md += `**Updated:** ${new Date(chat.updatedAt).toLocaleString()}  \n`;
-      md += `**Messages:** ${chat.messages.length}  \n\n`;
+      md += `**Messages:** ${messages.length}  \n\n`;
       md += `---\n\n`;
     }
 
-    for (const msg of chat.messages) {
+    for (const msg of messages) {
       const role = msg.role === 'user' ? '## You' : msg.role === 'assistant' ? '## Assistant' : '## System';
       const time = includeMetadata ? ` *(${new Date(msg.timestamp).toLocaleTimeString()})*` : '';
       md += `${role}${time}\n\n${msg.content}\n\n`;
@@ -303,21 +305,21 @@ export class ImportExportPage {
     return md;
   }
 
-  private exportToCSV(chat: ChatSession, includeMetadata: boolean): string {
+  private exportToCSV(messages: any[], includeMetadata: boolean): string {
     const headers = includeMetadata
       ? ['id', 'role', 'content', 'timestamp', 'modelId']
       : ['role', 'content'];
 
     const rows = [headers.join(',')];
 
-    for (const msg of chat.messages) {
+    for (const msg of messages) {
       const row = includeMetadata
         ? [
             msg.id,
             msg.role,
             `"${msg.content.replace(/"/g, '""')}"`,
             new Date(msg.timestamp).toISOString(),
-            chat.modelId,
+            msg.modelId || '',
           ]
         : [
             msg.role,
@@ -329,7 +331,7 @@ export class ImportExportPage {
     return rows.join('\n');
   }
 
-  private exportToText(chat: ChatSession, includeMetadata: boolean): string {
+  private exportToText(chat: ChatSession, messages: any[], includeMetadata: boolean): string {
     let txt = `${chat.title}\n`;
     txt += '='.repeat(chat.title.length) + '\n\n';
 
@@ -337,11 +339,11 @@ export class ImportExportPage {
       txt += `Model: ${chat.modelId}\n`;
       txt += `Created: ${new Date(chat.createdAt).toLocaleString()}\n`;
       txt += `Updated: ${new Date(chat.updatedAt).toLocaleString()}\n`;
-      txt += `Messages: ${chat.messages.length}\n\n`;
+      txt += `Messages: ${messages.length}\n\n`;
       txt += '-'.repeat(40) + '\n\n';
     }
 
-    for (const msg of chat.messages) {
+    for (const msg of messages) {
       const role = msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'Assistant' : 'System';
       const time = includeMetadata ? ` [${new Date(msg.timestamp).toLocaleTimeString()}]` : '';
       txt += `${role}${time}: ${msg.content}\n\n`;

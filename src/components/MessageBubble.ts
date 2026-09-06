@@ -32,7 +32,11 @@ export class MessageBubble {
     };
     this.originalContent = this.options.message.content;
     this.element = this.createElement();
-    this.contentElement = this.element.querySelector('.message-content') as HTMLElement;
+    const contentEl = this.element.querySelector('.message-content');
+    if (!(contentEl instanceof HTMLElement)) {
+      throw new Error('Content element not found');
+    }
+    this.contentElement = contentEl;
     this.updateContent(this.options.message.content);
   }
 
@@ -206,7 +210,7 @@ export class MessageBubble {
   }
 
   private updateActions(): void {
-    const actions = this.element.querySelector('.message-actions');
+    const actions = this.element.querySelector('.message-actions') as HTMLElement | null;
     if (!actions) return;
 
     actions.innerHTML = '';

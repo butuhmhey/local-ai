@@ -186,20 +186,28 @@ export async function retry<T>(
 /** Create element with attributes and children */
 export function createElement<K extends keyof HTMLElementTagNameMap>(
   tag: K,
-  attrs: Partial<HTMLElementTagNameMap[K]> & { children?: (Node | string)[] } = {}
+  attrs: {
+    class?: string;
+    style?: Partial<CSSStyleDeclaration>;
+    children?: (Node | string)[];
+    [key: string]: any
+  } = {}
 ): HTMLElementTagNameMap[K] {
   const element = document.createElement(tag);
-  const { children, ...attributes } = attrs;
+  const { children, class: className, style, ...attributes } = attrs;
+
+  if (className) {
+    element.className = className;
+  }
+  if (style) {
+    Object.assign(element.style, style);
+  }
 
   for (const [key, value] of Object.entries(attributes)) {
-    if (key === 'class') {
-      element.className = value as string;
-    } else if (key === 'style' && typeof value === 'object') {
-      Object.assign(element.style, value);
-    } else if (key.startsWith('on') && typeof value === 'function') {
+    if (key.startsWith('on') && typeof value === 'function') {
       element.addEventListener(key.slice(2).toLowerCase(), value as EventListener);
-    } else {
-      element.setAttribute(key, value as string);
+    } else if (value !== undefined && value !== null) {
+      element.setAttribute(key, String(value));
     }
   }
 
@@ -207,7 +215,7 @@ export function createElement<K extends keyof HTMLElementTagNameMap>(
     for (const child of children) {
       if (typeof child === 'string') {
         element.appendChild(document.createTextNode(child));
-      } else {
+      } else if (child instanceof Node) {
         element.appendChild(child);
       }
     }

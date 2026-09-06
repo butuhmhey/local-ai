@@ -5,14 +5,14 @@
 
 import { createElement, formatBytes, escapeHtml } from '../utils/helpers.js';
 import { detectFormat, getSupportedFormats, validateMessages } from '../utils/formatDetector.js';
-import { ImportEngine, type ImportPreview, type ImportResult } from '../services/importEngine.js';
-import type { ChatFormat } from '../types/index.js';
+import { ImportEngine, type ImportPreview, type ImportFile, type ImportResultExtended } from '../services/importEngine.js';
+import type { ChatFormat, ChatSession, ChatMessage } from '../types/index.js';
 
 export interface ImportDropzoneOptions {
   accept?: string; // File extensions
   maxFiles?: number;
   maxFileSize?: number; // bytes
-  onImport?: (result: ImportResult) => void;
+  onImport?: (result: ImportResultExtended) => void;
   onPreview?: (previews: ImportPreview[]) => void;
   showPreview?: boolean;
   multiple?: boolean;
@@ -28,14 +28,14 @@ export interface FilePreview {
 }
 
 export class ImportDropzone {
-  private element: HTMLElement;
-  private dropArea: HTMLElement;
-  private fileInput: HTMLInputElement;
+  private element!: HTMLElement;
+  private dropArea!: HTMLElement;
+  private fileInput!: HTMLInputElement;
   private previewContainer: HTMLElement | null = null;
-  private options: ImportDropzoneOptions;
+  private options!: ImportDropzoneOptions;
   private selectedFiles: File[] = [];
   private previews: FilePreview[] = [];
-  private importEngine: ImportEngine;
+  private importEngine!: ImportEngine;
   private isDragging = false;
 
   constructor(options: ImportDropzoneOptions = {}) {
@@ -126,7 +126,7 @@ export class ImportDropzone {
       class: 'file-input',
       accept: this.options.accept,
       multiple: this.options.multiple,
-      onChange: (e) => this.handleFileSelect(e.target as HTMLInputElement),
+      onChange: (e: Event) => this.handleFileSelect(e.target as HTMLInputElement),
     });
 
     // Preview container (initially hidden)
@@ -142,14 +142,14 @@ export class ImportDropzone {
 
   private bindEvents(): void {
     // Drag and drop
-    this.dropArea.addEventListener('dragover', (e) => this.handleDragOver(e));
-    this.dropArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
-    this.dropArea.addEventListener('drop', (e) => this.handleDrop(e));
+    this.dropArea.addEventListener('dragover', (e: DragEvent) => this.handleDragOver(e));
+    this.dropArea.addEventListener('dragleave', (e: DragEvent) => this.handleDragLeave(e));
+    this.dropArea.addEventListener('drop', (e: DragEvent) => this.handleDrop(e));
     this.dropArea.addEventListener('click', () => this.pickFiles());
 
     // Prevent default drag behavior on document
-    document.addEventListener('dragover', (e) => e.preventDefault());
-    document.addEventListener('drop', (e) => e.preventDefault());
+    document.addEventListener('dragover', (e: DragEvent) => e.preventDefault());
+    document.addEventListener('drop', (e: DragEvent) => e.preventDefault());
   }
 
   private handleDragOver(e: DragEvent): void {
@@ -247,7 +247,8 @@ export class ImportDropzone {
         let error: string | undefined;
 
         try {
-          const parsed = await this.importEngine['parseFile'](content, file.name, detection.format);
+          const importFile: ImportFile = { file, content, format: detection.format, preview: [] };
+          const parsed = await this.importEngine.parseFile(importFile);
           messageCount = parsed.length;
           sampleMessages = parsed.slice(0, 3).map(m => ({ role: m.role, content: m.content.slice(0, 100) }));
         } catch (e) {
@@ -350,7 +351,7 @@ export class ImportDropzone {
         class: 'file-remove-btn',
         'aria-label': `Remove ${file.name}`,
         children: ['✕'],
-        onClick: (e) => {
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.removeFile(i);
         },
@@ -464,7 +465,7 @@ export class ImportDropzone {
 }
 
 /** Create import dropzone for ImportExportPage */
-export function createImportDropzone(onImport: (result: ImportResult) => void): ImportDropzone {
+export function createImportDropzone(onImport: (result: ImportResultExtended) => void): ImportDropzone {
   return new ImportDropzone({
     onImport,
     showPreview: true,

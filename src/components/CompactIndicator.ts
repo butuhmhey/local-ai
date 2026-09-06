@@ -143,13 +143,13 @@ export class CompactIndicator {
   private async updateDisplay(): Promise<void> {
     try {
       // Get context usage from memory engine
-      const context = await this.memoryEngine.buildContextWindow(this.options.chatId, this.options.maxTokens!);
-      const usedTokens = context.tokensUsed;
+      const contextMessages = await this.memoryEngine.buildContextWindow(this.options.chatId, this.options.maxTokens!);
+      const usedTokens = contextMessages.reduce((sum, msg) => sum + (msg.tokens || 0), 0);
       const totalTokens = this.options.maxTokens!;
       const percentage = Math.min(1, usedTokens / totalTokens);
 
       this.currentUsage = { used: usedTokens, total: totalTokens, percentage };
-      this.stats = this.memoryEngine.getMemoryStats(this.options.chatId);
+      this.stats = this.memoryEngine.getMemoryStatsSync(this.options.chatId);
 
       // Update bar
       const fill = this.element.querySelector('.compact-fill') as HTMLElement;

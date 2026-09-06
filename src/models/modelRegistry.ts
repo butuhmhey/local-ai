@@ -5,6 +5,9 @@
 
 import type { ModelDefinition, ModelFilters } from '../types/index.js';
 
+/** Alias for ModelDefinition used by components */
+export type ModelInfo = ModelDefinition;
+
 /**
  * Complete model registry with all WebLLM-supported models
  * Includes computed fields: contextWindow, downloadSizeMB

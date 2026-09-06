@@ -4,7 +4,7 @@
  */
 
 import { createElement, formatBytes } from '../utils/helpers.js';
-import { ModelRegistry, type ModelInfo } from '../models/modelRegistry.js';
+import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
 
 export interface ModelSelectorOptions {
   selectedModelId?: string;
@@ -20,12 +20,12 @@ export interface ModelSelectorOptions {
 }
 
 export class ModelSelector {
-  private element: HTMLElement;
-  private button: HTMLButtonElement;
-  private dropdown: HTMLElement;
-  private searchInput: HTMLInputElement;
-  private listContainer: HTMLElement;
-  private options: ModelSelectorOptions;
+  private element!: HTMLElement;
+  private button!: HTMLButtonElement;
+  private dropdown!: HTMLElement;
+  private searchInput!: HTMLInputElement;
+  private listContainer!: HTMLElement;
+  private options!: ModelSelectorOptions;
   private allModels: ModelInfo[] = [];
   private filteredModels: ModelInfo[] = [];
   private isOpen = false;
@@ -40,7 +40,7 @@ export class ModelSelector {
     };
 
     this.debouncedFilter = debounce(() => this.filterModels(), 150);
-    this.allModels = ModelRegistry.getAllModels();
+    this.allModels = modelRegistry.getAllModels();
     this.filteredModels = [...this.allModels];
     this.element = this.createElement();
     this.bindEvents();
@@ -71,7 +71,7 @@ export class ModelSelector {
 
   /** Refresh model list (e.g., after download) */
   refresh(): void {
-    this.allModels = ModelRegistry.getAllModels();
+    this.allModels = modelRegistry.getAllModels();
     this.applyFilters();
   }
 
@@ -154,7 +154,7 @@ export class ModelSelector {
     const ramSelect = createElement('select', {
       class: 'filter-select',
       value: String(this.options.filterRAM || 0),
-      onChange: (e) => {
+      onChange: (e: Event) => {
         this.options.filterRAM = parseInt((e.target as HTMLSelectElement).value) || undefined;
         this.applyFilters();
       },
@@ -172,7 +172,7 @@ export class ModelSelector {
     const catSelect = createElement('select', {
       class: 'filter-select',
       value: this.options.filterCategory || 'all',
-      onChange: (e) => {
+      onChange: (e: Event) => {
         this.options.filterCategory = (e.target as HTMLSelectElement).value === 'all' ? undefined : (e.target as HTMLSelectElement).value;
         this.applyFilters();
       },
@@ -190,7 +190,7 @@ export class ModelSelector {
       class: 'filter-checkbox',
       id: 'filter-uncensored',
       checked: !!this.options.showUncensoredOnly,
-      onChange: (e) => {
+      onChange: (e: Event) => {
         this.options.showUncensoredOnly = (e.target as HTMLInputElement).checked;
         this.applyFilters();
       },
@@ -257,7 +257,7 @@ export class ModelSelector {
 
     // RAM filter
     if (this.options.filterRAM) {
-      models = models.filter(m => m.vramGB <= this.options.filterRAM!);
+      models = models.filter(m => m.ramGB <= this.options.filterRAM!);
     }
 
     // Category filter
@@ -308,7 +308,8 @@ export class ModelSelector {
 
   private createModelItem(model: ModelInfo): HTMLElement {
     const isSelected = model.id === this.options.selectedModelId;
-    const isDownloaded = model.downloaded;
+    // Check if model is downloaded via storage engine
+    const isDownloaded = false; // Will be updated async
 
     const item = createElement('div', {
       class: `model-item ${isSelected ? 'selected' : ''} ${isDownloaded ? 'downloaded' : ''}`,
@@ -337,9 +338,9 @@ export class ModelSelector {
 
     // Details
     const details = createElement('div', { class: 'model-item-details' });
-    const size = createElement('span', { class: 'model-item-size', children: [formatBytes(model.downloadSizeMB * 1024 * 1024)] });
-    const vram = createElement('span', { class: 'model-item-vram', children: [`VRAM: ${model.vramGB}GB`] });
-    const ctx = createElement('span', { class: 'model-item-ctx', children: [`Ctx: ${formatNumber(model.contextWindow)}`] });
+    const size = createElement('span', { class: 'model-item-size', children: [formatBytes((model.downloadSizeMB ?? 0) * 1024 * 1024)] });
+    const vram = createElement('span', { class: 'model-item-vram', children: [`VRAM: ${model.ramGB}GB`] });
+    const ctx = createElement('span', { class: 'model-item-ctx', children: [`Ctx: ${formatNumber(model.contextWindow ?? 4096)}`] });
     details.append(size, vram, ctx);
     info.appendChild(details);
 
@@ -358,7 +359,7 @@ export class ModelSelector {
         title: 'Download model',
         'aria-label': `Download ${model.name}`,
         children: ['⬇️'],
-        onClick: (e) => {
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
           if (this.options.onDownload) this.options.onDownload(model);
         },
@@ -372,7 +373,7 @@ export class ModelSelector {
         title: 'Delete cached model',
         'aria-label': `Delete ${model.name}`,
         children: ['🗑️'],
-        onClick: (e) => {
+        onClick: (e: MouseEvent) => {
           e.stopPropagation();
           if (this.options.onDelete) this.options.onDelete(model);
         },

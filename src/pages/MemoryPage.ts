@@ -5,23 +5,19 @@
 
 import { createElement, formatNumber, formatRelativeTime, escapeHtml } from '../utils/helpers.js';
 import { createMemoryCardSet, MemoryCard } from '../components/MemoryCard.js';
-import { MemoryEngine } from '../services/memoryEngine.js';
-import { StorageEngine } from '../services/storageEngine.js';
-import type { MemoryFact, MemorySummary, ChatSession } from '../types/index.js';
+import { memoryEngine } from '../services/memoryEngine.js';
+import { storageEngine } from '../services/storageEngine.js';
+import type { MemoryFact, MemorySummary, ChatSession, MemoryLayer, Fact } from '../types/index.js';
 
 export class MemoryPage {
-  private element: HTMLElement;
-  private memoryEngine: MemoryEngine;
-  private storageEngine: StorageEngine;
-  private chatSelect: HTMLSelectElement;
-  private memoryCardsContainer: HTMLElement;
-  private statsContainer: HTMLElement;
+  private element!: HTMLElement;
+  private chatSelect!: HTMLSelectElement;
+  private memoryCardsContainer!: HTMLElement;
+  private statsContainer!: HTMLElement;
   private currentChatId: string | null = null;
   private memoryCards: Map<string, MemoryCard> = new Map();
 
   constructor() {
-    this.memoryEngine = MemoryEngine.getInstance();
-    this.storageEngine = StorageEngine.getInstance();
     this.element = this.createElement();
     this.bindEvents();
   }
@@ -51,7 +47,7 @@ export class MemoryPage {
     this.chatSelect = createElement('select', {
       id: 'memory-chat',
       class: 'form-select',
-      onChange: (e) => this.onChatChange((e.target as HTMLSelectElement).value),
+      onChange: (e: Event) => this.onChatChange((e.target as HTMLSelectElement).value),
     });
     selectorSection.append(selectorLabel, this.chatSelect);
 
@@ -95,16 +91,17 @@ export class MemoryPage {
 
   private async refreshChatList(): Promise<void> {
     try {
-      const chats = await this.storageEngine.getAllChats();
+      const chats = await storageEngine.getAllChats();
       chats.sort((a, b) => b.updatedAt - a.updatedAt);
 
       const currentValue = this.chatSelect.value;
 
       this.chatSelect.innerHTML = '<option value="">-- Select a conversation --</option>';
       for (const chat of chats) {
+        const messages = await storageEngine.getMessages(chat.id);
         const option = createElement('option', {
           value: chat.id,
-          children: [`${chat.title} (${chat.messages.length} msgs)`],
+          children: [`${chat.title} (${messages.length} msgs)`],
         });
         this.chatSelect.appendChild(option);
       }
@@ -137,11 +134,11 @@ export class MemoryPage {
   private async loadMemory(chatId: string): Promise<void> {
     try {
       // Get chat for message count
-      const chat = await this.storageEngine.getChat(chatId);
+      const chat = await storageEngine.getChat(chatId);
       if (!chat) throw new Error('Chat not found');
 
       // Get memory stats
-      const stats = this.memoryEngine.getMemoryStats(chatId);
+      const stats = await memoryEngine.getMemoryStats(chatId);
 
       // Get memory data
       const memory = chat.memory || { level0: [], level1: [], level2: [], facts: [] };
@@ -149,12 +146,37 @@ export class MemoryPage {
       // Render stats
       this.renderStats(stats, chat);
 
+      // Convert MemoryLayer[] to MemorySummary[] for all levels
+      const convertToSummary = (layers: MemoryLayer[]): MemorySummary[] => layers.map(l => ({
+        id: l.id,
+        chatId: l.chatId,
+        level: l.level as 1 | 2,
+        content: l.content,
+        tokens: l.tokens,
+        timestamp: l.timestamp,
+        messageCount: l.sourceMessageIds.length,
+        sourceRange: undefined,
+      }));
+
+      // Convert Fact[] to MemoryFact[]
+      const convertToMemoryFact = (facts: Fact[]): MemoryFact[] => facts.map(f => ({
+        id: f.id,
+        chatId: f.chatId,
+        entity: f.entity,
+        relation: f.relation,
+        value: f.value,
+        confidence: f.confidence,
+        sourceMessageIds: [f.sourceMessageId],
+        extractedAt: f.createdAt,
+        timestamp: f.createdAt,
+      }));
+
       // Render memory cards
       this.renderMemoryCards({
-        level0: memory.level0,
-        level1: memory.level1,
-        level2: memory.level2,
-        facts: memory.facts,
+        level0: convertToSummary(memory.level0),
+        level1: convertToSummary(memory.level1),
+        level2: convertToSummary(memory.level2),
+        facts: convertToMemoryFact(memory.facts),
       });
     } catch (error) {
       console.error('[MemoryPage] Failed to load memory:', error);
@@ -215,7 +237,7 @@ export class MemoryPage {
 
     try {
       const updatedFact = { ...fact, ...updates };
-      await this.memoryEngine.updateFact(this.currentChatId, updatedFact);
+      await memoryEngine.updateFact(this.currentChatId, updatedFact);
       this.showToast('Fact updated', 'success');
       await this.loadMemory(this.currentChatId);
     } catch (error) {
@@ -231,7 +253,7 @@ export class MemoryPage {
 
     try {
       // Determine type and delete
-      await this.memoryEngine.deleteMemoryItem(this.currentChatId, id);
+      await memoryEngine.deleteMemoryItem(this.currentChatId, id);
       this.showToast('Deleted', 'success');
       await this.loadMemory(this.currentChatId);
     } catch (error) {
@@ -247,12 +269,12 @@ export class MemoryPage {
     }
 
     try {
-      const chat = await this.storageEngine.getChat(this.currentChatId);
+      const chat = await storageEngine.getChat(this.currentChatId);
       if (!chat || !chat.memory) throw new Error('No memory data');
 
       let content = `# Memory Export: ${chat.title}\n\n`;
       content += `Exported: ${new Date().toLocaleString()}\n`;
-      content += `Messages: ${chat.messages.length}\n\n`;
+      content += `Messages: ${(await storageEngine.getMessages(this.currentChatId!)).length}\n\n`;
 
       // Facts
       if (chat.memory.facts.length > 0) {
@@ -299,12 +321,14 @@ export class MemoryPage {
     }
 
     try {
-      const chat = await this.storageEngine.getChat(this.currentChatId);
+      const chat = await storageEngine.getChat(this.currentChatId);
       if (!chat) throw new Error('Chat not found');
+
+      const messages = await storageEngine.getMessages(this.currentChatId);
 
       this.showToast('Compacting...', 'info');
 
-      await this.memoryEngine.maybeCompact(chat.messages, this.currentChatId);
+      await memoryEngine.maybeCompact(messages, this.currentChatId);
 
       this.showToast('Compaction complete', 'success');
       await this.loadMemory(this.currentChatId);
@@ -323,7 +347,7 @@ export class MemoryPage {
     if (!confirm('Clear ALL memory for this conversation? This cannot be undone.')) return;
 
     try {
-      await this.memoryEngine.clearMemory(this.currentChatId);
+      await memoryEngine.clearMemory(this.currentChatId);
       this.showToast('Memory cleared', 'success');
       await this.loadMemory(this.currentChatId);
     } catch (error) {
