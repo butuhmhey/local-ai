@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: local-ai-chat
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    headers:
+      - path: /*
+        name: Cross-Origin-Embedder-Policy
+        value: require-corp
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
+      - path: /assets/*.wasm
+        name: Content-Type
+        value: application/wasm
+      - path: /sw.js
+        name: Service-Worker-Allowed
+        value: /
+      - path: /manifest.webmanifest
+        name: Content-Type
+        value: application/manifest+json
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
