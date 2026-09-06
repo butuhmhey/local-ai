@@ -1,0 +1,249 @@
+/**
+ * Core type definitions for Local AI Chat
+ */
+
+/** Chat message roles */
+export type MessageRole = 'user' | 'assistant' | 'system';
+
+/** Chat message */
+export interface ChatMessage {
+  id: string;
+  role: MessageRole;
+  content: string;
+  timestamp: number;
+  tokens?: number;
+  isCompacted?: boolean;
+  parentSummaryId?: string;
+  modelId?: string;
+}
+
+/** Chat session */
+export interface ChatSession {
+  id: string;
+  title: string;
+  modelId: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+  compactedAt?: number;
+  settings?: ChatSessionSettings;
+}
+
+/** Chat session settings */
+export interface ChatSessionSettings {
+  temperature?: number;
+  topP?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+}
+
+/** Model definition */
+export interface ModelDefinition {
+  id: string;
+  name: string;
+  sizeParams: string;
+  quantization: string;
+  ramGB: number;
+  category: 'general' | 'coding' | 'reasoning' | 'uncensored';
+  uncensored: boolean;
+  description: string;
+  contextWindow?: number;
+  downloadSizeMB?: number;
+}
+
+/** Model filter options */
+export interface ModelFilters {
+  maxRAM?: number;
+  category?: ModelDefinition['category'];
+  uncensoredOnly?: boolean;
+  searchQuery?: string;
+}
+
+/** Memory layer for hierarchical compaction */
+export interface MemoryLayer {
+  id: string;
+  chatId: string;
+  level: 0 | 1 | 2;
+  content: string;
+  tokens: number;
+  timestamp: number;
+  sourceMessageIds: string[];
+  extractedFacts: Fact[];
+}
+
+/** Extracted fact */
+export interface Fact {
+  id: string;
+  chatId: string;
+  entity: string;
+  relation: string;
+  value: string;
+  confidence: number;
+  sourceMessageId: string;
+  sourceMemoryId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Imported chat format */
+export type ChatFormat =
+  | 'chatgpt'
+  | 'sharegpt'
+  | 'openai-jsonl'
+  | 'generic-json'
+  | 'csv'
+  | 'markdown'
+  | 'text'
+  | 'unknown';
+
+/** Import result */
+export interface ImportResult {
+  sessions: ChatSession[];
+  messages: ChatMessage[];
+  format: ChatFormat;
+  fileName: string;
+  warnings: string[];
+}
+
+/** Storage schema types */
+export interface StoredChat {
+  id: string;
+  title: string;
+  modelId: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+  compactedAt?: number;
+  settings?: ChatSessionSettings;
+}
+
+export interface StoredMessage {
+  id: string;
+  chatId: string;
+  role: MessageRole;
+  content: string;
+  tokens: number;
+  timestamp: number;
+  isCompacted: boolean;
+  parentSummaryId?: string;
+  modelId?: string;
+}
+
+export interface StoredMemory {
+  id: string;
+  chatId: string;
+  level: 0 | 1 | 2;
+  content: string;
+  tokens: number;
+  facts: Fact[];
+  sourceMessageIds: string[];
+  createdAt: number;
+}
+
+export interface StoredFact {
+  id: string;
+  chatId: string;
+  entity: string;
+  relation: string;
+  value: string;
+  confidence: number;
+  sourceMessageId: string;
+  sourceMemoryId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface StoredModel {
+  id: string;
+  modelId: string;
+  downloadedAt: number;
+  sizeBytes: number;
+  lastUsed: number;
+}
+
+export interface StoredSetting {
+  key: string;
+  value: unknown;
+}
+
+/** WebLLM engine types */
+export interface ModelLoadProgress {
+  modelId: string;
+  progress: number;
+  stage: 'downloading' | 'compiling' | 'loading' | 'ready' | 'error';
+  message?: string;
+  error?: string;
+}
+
+export interface ChatOptions {
+  temperature?: number;
+  topP?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+  onProgress?: (token: string) => void;
+}
+
+export interface ContextUsage {
+  used: number;
+  total: number;
+  percentage: number;
+}
+
+/** Settings */
+export interface AppSettings {
+  theme: 'light' | 'dark' | 'auto';
+  autoCompactThreshold: number; // percentage (default 75)
+  recentMessageCount: number; // messages to keep raw (default 10)
+  defaultModelId: string;
+  autoDownloadModels: boolean;
+  compactOnModelSwitch: boolean;
+  showTokenCount: boolean;
+  enableStreaming: boolean;
+}
+
+/** Route types */
+export type Route = 'chat' | 'models' | 'import' | 'memory' | 'settings';
+
+/** Router event */
+export interface RouteChangeEvent extends CustomEvent {
+  detail: { route: Route; params?: Record<string, string> };
+}
+
+/** Toast notification */
+export interface Toast {
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  title: string;
+  message?: string;
+  duration?: number;
+}
+
+/** File import info */
+export interface ImportFile {
+  file: File;
+  content: string;
+  format: ChatFormat;
+  preview: ChatMessage[];
+  error?: string;
+}
+
+/** WebGPU support check */
+export interface GPUInfo {
+  supported: boolean;
+  adapter?: GPUAdapter;
+  device?: GPUDevice;
+  error?: string;
+}
+
+/** Export formats */
+export type ExportFormat = 'json' | 'markdown' | 'csv' | 'txt';
+
+/** Compact trigger result */
+export interface CompactResult {
+  success: boolean;
+  originalTokens: number;
+  compactedTokens: number;
+  layersCreated: number;
+  factsExtracted: number;
+  message?: string;
+}
