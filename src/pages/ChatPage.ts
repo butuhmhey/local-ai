@@ -1,0 +1,584 @@
+/**
+ * ChatPage - Main chat interface with streaming, model selector, compact indicator
+ */
+
+import { createElement, generateId, formatTime, escapeHtml, truncate } from '../utils/helpers.js';
+import { MessageBubble, createStreamingBubble } from '../components/MessageBubble.js';
+import { ModelSelector, createCompactModelSelector } from '../components/ModelSelector.js';
+import { CompactIndicator } from '../components/CompactIndicator.js';
+import { WebLLMEngine } from '../services/webllmEngine.js';
+import { MemoryEngine } from '../services/memoryEngine.js';
+import { StorageEngine } from '../services/storageEngine.js';
+import { ModelRegistry } from '../models/modelRegistry.js';
+import type { Message, ChatSession, ModelInfo } from '../types/index.js';
+
+export class ChatPage {
+  private element: HTMLElement;
+  private webllmEngine: WebLLMEngine;
+  private memoryEngine: MemoryEngine;
+  private storageEngine: StorageEngine;
+  private modelSelector: ModelSelector;
+  private compactIndicator: CompactIndicator;
+  private chatContainer: HTMLElement;
+  private inputArea: HTMLTextAreaElement;
+  private sendBtn: HTMLButtonElement;
+  private currentChatId: string | null = null;
+  private currentModel: ModelInfo | null = null;
+  private isStreaming = false;
+  private abortController: AbortController | null = null;
+  private messageBubbles: Map<string, MessageBubble> = new Map();
+  private pendingUserMessage: Message | null = null;
+
+  constructor() {
+    this.webllmEngine = WebLLMEngine.getInstance();
+    this.memoryEngine = MemoryEngine.getInstance();
+    this.storageEngine = StorageEngine.getInstance();
+    this.element = this.createElement();
+    this.bindEvents();
+    this.loadLastChat();
+  }
+
+  getElement(): HTMLElement {
+    return this.element;
+  }
+
+  /** Called when page is shown */
+  async onShow(): Promise<void> {
+    await this.initModelSelector();
+    if (this.currentChatId) {
+      await this.loadChat(this.currentChatId);
+    }
+  }
+
+  /** Called when page is hidden */
+  onHide(): void {
+    // Cancel any ongoing generation
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+  }
+
+  /** Create new chat */
+  async newChat(): Promise<void> {
+    // Save current chat if it has messages
+    if (this.currentChatId && this.messageBubbles.size > 0) {
+      await this.saveCurrentChat();
+    }
+
+    // Create new chat
+    const chatId = generateId();
+    const modelId = this.currentModel?.id || ModelRegistry.getDefaultModel()?.id || '';
+
+    const chat: ChatSession = {
+      id: chatId,
+      title: 'New Chat',
+      modelId,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      memory: {
+        level0: [],
+        level1: [],
+        level2: [],
+        facts: [],
+      },
+      settings: {
+        temperature: 0.7,
+        topP: 0.95,
+        maxTokens: 2048,
+      },
+    };
+
+    await this.storageEngine.saveChat(chat);
+    this.currentChatId = chatId;
+    this.clearMessages();
+    this.updateChatTitle('New Chat');
+    this.compactIndicator.setChatId(chatId);
+  }
+
+  /** Load chat by ID */
+  async loadChat(chatId: string): Promise<void> {
+    try {
+      const chat = await this.storageEngine.getChat(chatId);
+      if (!chat) throw new Error('Chat not found');
+
+      this.currentChatId = chatId;
+      this.currentModel = ModelRegistry.getModel(chat.modelId) || null;
+
+      // Update model selector
+      if (this.currentModel) {
+        this.modelSelector.setSelectedModel(this.currentModel.id);
+      }
+
+      // Load messages
+      this.clearMessages();
+      for (const msg of chat.messages) {
+        this.addMessageBubble(msg, false);
+      }
+
+      // Update title
+      this.updateChatTitle(chat.title);
+
+      // Update compact indicator
+      this.compactIndicator.setChatId(chatId);
+      this.compactIndicator.setMaxTokens(this.currentModel?.contextWindow || 4096);
+
+      // Scroll to bottom
+      this.scrollToBottom();
+    } catch (error) {
+      console.error('[ChatPage] Failed to load chat:', error);
+      this.showToast('Failed to load chat', 'error');
+    }
+  }
+
+  /** Save current chat */
+  async saveCurrentChat(): Promise<void> {
+    if (!this.currentChatId) return;
+
+    try {
+      const messages = Array.from(this.messageBubbles.values())
+        .map(b => b['options'].message)
+        .filter(m => m.role !== 'system'); // Don't save system messages
+
+      const chat = await this.storageEngine.getChat(this.currentChatId);
+      if (!chat) return;
+
+      // Update title from first user message if still "New Chat"
+      let title = chat.title;
+      if (title === 'New Chat') {
+        const firstUserMsg = messages.find(m => m.role === 'user');
+        if (firstUserMsg) {
+          title = truncate(firstUserMsg.content, 50);
+        }
+      }
+
+      chat.messages = messages;
+      chat.title = title;
+      chat.updatedAt = Date.now();
+      chat.modelId = this.currentModel?.id || chat.modelId;
+
+      await this.storageEngine.saveChat(chat);
+      this.updateChatTitle(title);
+    } catch (error) {
+      console.error('[ChatPage] Failed to save chat:', error);
+    }
+  }
+
+  /** Handle sending a message */
+  async handleSend(): Promise<void> {
+    const text = this.inputArea.value.trim();
+    if (!text || this.isStreaming) return;
+
+    if (!this.currentChatId) {
+      await this.newChat();
+    }
+
+    if (!this.currentModel) {
+      this.showToast('Please select a model first', 'warning');
+      return;
+    }
+
+    // Check if model is loaded
+    if (!this.webllmEngine.isModelLoaded(this.currentModel.id)) {
+      await this.loadCurrentModel();
+    }
+
+    // Create user message
+    const userMessage: Message = {
+      id: generateId(),
+      role: 'user',
+      content: text,
+      timestamp: Date.now(),
+    };
+
+    this.addMessageBubble(userMessage, false);
+    this.pendingUserMessage = userMessage;
+    this.inputArea.value = '';
+    this.autoResizeTextarea();
+
+    // Create streaming assistant bubble
+    const assistantId = generateId();
+    const streamingBubble = createStreamingBubble(assistantId,
+      (text) => navigator.clipboard.writeText(text),
+      (id) => this.regenerateMessage(id)
+    );
+    this.addMessageBubble(streamingBubble['options'].message, true);
+    this.messageBubbles.set(assistantId, streamingBubble);
+
+    this.isStreaming = true;
+    this.sendBtn.disabled = true;
+    this.sendBtn.textContent = '⏹️ Stop';
+    this.inputArea.disabled = true;
+
+    this.abortController = new AbortController();
+
+    try {
+      // Build context with memory
+      const context = await this.memoryEngine.buildContextWindow(
+        this.currentChatId!,
+        this.currentModel.contextWindow
+      );
+
+      // Add current user message to context
+      context.messages.push(userMessage);
+
+      // Stream response
+      let fullResponse = '';
+      for await (const chunk of this.webllmEngine.streamChat(context.messages, {
+        temperature: 0.7,
+        topP: 0.95,
+        maxTokens: 2048,
+        signal: this.abortController.signal,
+      })) {
+        fullResponse += chunk;
+        streamingBubble.append(chunk);
+        this.scrollToBottom();
+      }
+
+      // Complete streaming
+      streamingBubble.complete();
+      this.isStreaming = false;
+      this.sendBtn.disabled = false;
+      this.sendBtn.textContent = '➤ Send';
+      this.inputArea.disabled = false;
+      this.inputArea.focus();
+
+      // Save assistant message
+      const assistantMessage: Message = {
+        id: assistantId,
+        role: 'assistant',
+        content: fullResponse,
+        timestamp: Date.now(),
+      };
+      streamingBubble['options'].message = assistantMessage;
+      this.messageBubbles.set(assistantId, streamingBubble);
+
+      // Check if auto-compact needed
+      await this.maybeAutoCompact();
+
+      // Save chat
+      await this.saveCurrentChat();
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        streamingBubble.setError('Stopped');
+      } else {
+        console.error('[ChatPage] Generation error:', error);
+        streamingBubble.setError('Generation failed');
+        this.showToast('Failed to generate response', 'error');
+      }
+      this.isStreaming = false;
+      this.sendBtn.disabled = false;
+      this.sendBtn.textContent = '➤ Send';
+      this.inputArea.disabled = false;
+      this.inputArea.focus();
+    } finally {
+      this.abortController = null;
+      this.pendingUserMessage = null;
+    }
+  }
+
+  /** Stop generation */
+  handleStop(): void {
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+  }
+
+  /** Regenerate last assistant message */
+  async regenerateMessage(messageId: string): Promise<void> {
+    // Find the user message before this assistant message
+    const messages = Array.from(this.messageBubbles.values())
+      .map(b => b['options'].message);
+
+    const assistantIndex = messages.findIndex(m => m.id === messageId);
+    if (assistantIndex <= 0) return;
+
+    // Remove this and all subsequent messages
+    const toRemove = messages.slice(assistantIndex);
+    for (const msg of toRemove) {
+      this.messageBubbles.get(msg.id)?.getElement().remove();
+      this.messageBubbles.delete(msg.id);
+    }
+
+    // Re-send from the user message before
+    const userMessage = messages[assistantIndex - 1];
+    if (userMessage.role === 'user') {
+      this.inputArea.value = userMessage.content;
+      await this.handleSend();
+    }
+  }
+
+  /** Handle model change */
+  async onModelChange(model: ModelInfo): Promise<void> {
+    if (this.currentModel?.id === model.id) return;
+
+    this.currentModel = model;
+    this.compactIndicator.setMaxTokens(model.contextWindow);
+
+    // If there's an active chat, switch model
+    if (this.currentChatId && this.messageBubbles.size > 0) {
+      this.showToast(`Switching to ${model.name}...`, 'info');
+
+      try {
+        const messages = Array.from(this.messageBubbles.values())
+          .map(b => b['options'].message);
+
+        await this.webllmEngine.switchModel(model.id, messages);
+        this.showToast(`Switched to ${model.name}`, 'success');
+      } catch (error) {
+        console.error('[ChatPage] Model switch failed:', error);
+        this.showToast('Failed to switch model', 'error');
+      }
+    }
+
+    await this.saveCurrentChat();
+  }
+
+  /** Load current model */
+  private async loadCurrentModel(): Promise<void> {
+    if (!this.currentModel) return;
+
+    const loadingToast = this.showToast(`Loading ${this.currentModel.name}...`, 'info');
+
+    try {
+      await this.webllmEngine.loadModel(this.currentModel.id, (progress) => {
+        loadingToast.textContent = `Loading ${this.currentModel!.name}: ${Math.round(progress * 100)}%`;
+      });
+      loadingToast.remove();
+      this.showToast(`${this.currentModel.name} ready`, 'success');
+    } catch (error) {
+      loadingToast.remove();
+      console.error('[ChatPage] Model load failed:', error);
+      this.showToast(`Failed to load ${this.currentModel.name}`, 'error');
+      throw error;
+    }
+  }
+
+  /** Check if auto-compact needed */
+  private async maybeAutoCompact(): Promise<void> {
+    if (!this.currentChatId) return;
+
+    const messages = Array.from(this.messageBubbles.values())
+      .map(b => b['options'].message);
+
+    await this.memoryEngine.maybeCompact(messages, this.currentChatId);
+    this.compactIndicator.refresh();
+  }
+
+  /** Handle manual compact */
+  async handleCompact(): Promise<void> {
+    if (!this.currentChatId) return;
+
+    const messages = Array.from(this.messageBubbles.values())
+      .map(b => b['options'].message);
+
+    this.compactIndicator.setCompacting(true);
+
+    try {
+      await this.memoryEngine.maybeCompact(messages, this.currentChatId);
+      this.showToast('Conversation compacted', 'success');
+    } catch (error) {
+      console.error('[ChatPage] Compact failed:', error);
+      this.showToast('Compaction failed', 'error');
+    } finally {
+      this.compactIndicator.setCompacting(false);
+      this.compactIndicator.refresh();
+    }
+  }
+
+  /** Clear message display */
+  private clearMessages(): void {
+    this.chatContainer.innerHTML = '';
+    this.messageBubbles.clear();
+  }
+
+  /** Add message bubble to chat */
+  private addMessageBubble(message: Message, isStreaming: boolean): void {
+    const bubble = new MessageBubble({
+      message,
+      isStreaming,
+      onCopy: (text) => navigator.clipboard.writeText(text),
+      onRegenerate: (id) => this.regenerateMessage(id),
+      onEdit: (id, content) => this.editMessage(id, content),
+      onDelete: (id) => this.deleteMessage(id),
+    });
+
+    this.chatContainer.appendChild(bubble.getElement());
+    this.messageBubbles.set(message.id, bubble);
+    this.scrollToBottom();
+  }
+
+  /** Edit a user message */
+  private async editMessage(messageId: string, newContent: string): Promise<void> {
+    // Remove this and all subsequent messages
+    const messages = Array.from(this.messageBubbles.values())
+      .map(b => b['options'].message);
+
+    const index = messages.findIndex(m => m.id === messageId);
+    if (index < 0) return;
+
+    const toRemove = messages.slice(index + 1);
+    for (const msg of toRemove) {
+      this.messageBubbles.get(msg.id)?.getElement().remove();
+      this.messageBubbles.delete(msg.id);
+    }
+
+    // Re-send from edited message
+    this.inputArea.value = newContent;
+    await this.handleSend();
+  }
+
+  /** Delete a message */
+  private deleteMessage(messageId: string): void {
+    const bubble = this.messageBubbles.get(messageId);
+    if (bubble) {
+      bubble.getElement().remove();
+      this.messageBubbles.delete(messageId);
+    }
+  }
+
+  /** Scroll chat to bottom */
+  private scrollToBottom(): void {
+    this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+  }
+
+  /** Auto-resize textarea */
+  private autoResizeTextarea(): void {
+    this.inputArea.style.height = 'auto';
+    this.inputArea.style.height = `${Math.min(this.inputArea.scrollHeight, 200)}px`;
+  }
+
+  /** Update chat title in header */
+  private updateChatTitle(title: string): void {
+    const titleEl = this.element.querySelector('.chat-title');
+    if (titleEl) titleEl.textContent = title;
+  }
+
+  /** Initialize model selector */
+  private async initModelSelector(): Promise<void> {
+    this.modelSelector = createCompactModelSelector(
+      this.currentModel?.id || '',
+      (model) => this.onModelChange(model)
+    );
+
+    const selectorContainer = this.element.querySelector('.model-selector-container');
+    if (selectorContainer) {
+      selectorContainer.innerHTML = '';
+      selectorContainer.appendChild(this.modelSelector.getElement());
+    }
+
+    // Load default model if none selected
+    if (!this.currentModel) {
+      const defaultModel = ModelRegistry.getDefaultModel();
+      if (defaultModel) {
+        this.currentModel = defaultModel;
+        this.modelSelector.setSelectedModel(defaultModel.id);
+        await this.loadCurrentModel();
+      }
+    }
+  }
+
+  /** Load last active chat */
+  private async loadLastChat(): Promise<void> {
+    try {
+      const chats = await this.storageEngine.getAllChats();
+      if (chats.length > 0) {
+        // Sort by updatedAt desc
+        chats.sort((a, b) => b.updatedAt - a.updatedAt);
+        this.currentChatId = chats[0].id;
+      }
+    } catch (error) {
+      console.warn('[ChatPage] No previous chats found');
+    }
+  }
+
+  private createElement(): HTMLElement {
+    const page = createElement('div', { class: 'page chat-page' });
+
+    // Header
+    const header = createElement('header', { class: 'chat-header' });
+    const title = createElement('h1', { class: 'chat-title', children: ['New Chat'] });
+    const modelContainer = createElement('div', { class: 'model-selector-container' });
+    header.append(title, modelContainer);
+
+    // Chat container
+    this.chatContainer = createElement('div', { class: 'chat-container' });
+
+    // Compact indicator
+    this.compactIndicator = new CompactIndicator({
+      chatId: this.currentChatId || '',
+      maxTokens: this.currentModel?.contextWindow || 4096,
+      onCompact: () => this.handleCompact(),
+      showDetails: true,
+    });
+
+    // Input area
+    const inputWrapper = createElement('div', { class: 'chat-input-wrapper' });
+    const inputRow = createElement('div', { class: 'chat-input-row' });
+
+    this.inputArea = createElement('textarea', {
+      class: 'chat-input',
+      placeholder: 'Type a message... (Shift+Enter for new line)',
+      rows: 1,
+      onInput: () => this.autoResizeTextarea(),
+      onKeydown: (e) => this.handleInputKeydown(e),
+    });
+
+    this.sendBtn = createElement('button', {
+      class: 'btn btn-primary send-btn',
+      type: 'button',
+      children: ['➤ Send'],
+      onClick: () => this.handleSend(),
+    });
+
+    inputRow.append(this.inputArea, this.sendBtn);
+
+    // Compact indicator + actions
+    const actionsRow = createElement('div', { class: 'chat-actions-row' });
+    actionsRow.append(
+      this.compactIndicator.getElement(),
+      createElement('button', {
+        class: 'btn btn-secondary new-chat-btn',
+        type: 'button',
+        children: ['+ New Chat'],
+        onClick: () => this.newChat(),
+      })
+    );
+
+    inputWrapper.append(inputRow, actionsRow);
+
+    page.append(header, this.chatContainer, inputWrapper);
+    return page;
+  }
+
+  private handleInputKeydown(e: KeyboardEvent): void {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!this.isStreaming) {
+        this.handleSend();
+      } else {
+        this.handleStop();
+      }
+    }
+  }
+
+  private bindEvents(): void {
+    // Auto-resize on input
+    this.inputArea?.addEventListener('input', () => this.autoResizeTextarea());
+  }
+
+  private showToast(message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success'): HTMLElement {
+    const toast = createElement('div', {
+      class: `toast toast-${type}`,
+      children: [message],
+    });
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, type === 'error' ? 5000 : 3000);
+    return toast;
+  }
+}

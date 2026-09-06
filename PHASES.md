@@ -19,63 +19,66 @@
 - [x] **Global CSS** (`src/styles/global.css`) — reset, base styles, utilities, animations, scrollbar, focus-visible, skeleton loaders
 - [x] **Components CSS** (`src/styles/components.css`) — buttons, inputs, cards, badges, dropdowns, modals, toasts, tabs, progress, avatars, code blocks, sidebar, page layout
 - [x] Routing types (`Route`, `RouteChangeEvent`) defined
-
-### Remaining in Phase 1:
-- [ ] `src/main.ts` — App bootstrap, router, service registration
-- [ ] `public/manifest.json` — PWA manifest (name, icons, shortcuts, theme)
-- [ ] Route outlet + navigation shell (sidebar + header)
+- [x] `src/main.ts` — App bootstrap, router, service registration
+- [x] `public/manifest.json` — PWA manifest (name, icons, shortcuts, theme)
+- [x] Route outlet + navigation shell (sidebar + header)
 
 ---
 
-## Phase 2 — Core Engines & Services 🔄 IN PROGRESS
-**Status:** Next up  
+## Phase 2 — Core Engines & Services ✅ COMPLETE
+**Status:** Done  
 **Goal:** All business logic services working independently
 
-### To Implement:
-- [ ] **Model Registry** (`src/models/modelRegistry.ts`)
-  - 100+ model definitions from ChatGPT data
+### Completed:
+- [x] **Model Registry** (`src/models/modelRegistry.ts`)
+  - 100+ model definitions from WebLLM supported models
   - Computed fields: `contextWindow`, `downloadSizeMB`
-  - Filters: `getModelsUnderRAM(gb)`, `getUncensoredModels()`, `getByCategory(cat)`
+  - Filters: `getModelsUnderRAM(gb)`, `getUncensoredModels()`, `getByCategory(cat)`, `searchModels()`
 
-- [ ] **StorageEngine** (`src/services/storageEngine.ts`)
+- [x] **StorageEngine** (`src/services/storageEngine.ts`)
   - IndexedDB via `idb` library
   - Tables: chats, messages, memories, facts, models, settings
   - CRUD + query helpers for each entity
+  - Export/import chat data
 
-- [ ] **WebLLMEngine** (`src/services/webllmEngine.ts`)
+- [x] **WebLLMEngine** (`src/services/webllmEngine.ts`)
   - `loadModel(modelId, onProgress)` → MLCEngine
   - `streamChat(messages, options)` → AsyncGenerator<string>
   - `getContextUsage()` → { used, total, percentage }
   - `switchModel(newModelId, currentMessages)` — re-encode with new tokenizer
   - WebGPU detection + fallback notice
+  - Summary generation and fact extraction
 
-- [ ] **MemoryEngine** (`src/services/memoryEngine.ts`) — **Core Feature**
+- [x] **MemoryEngine** (`src/services/memoryEngine.ts`) — **Core Feature**
   - Hierarchical memory: Level 0 (raw recent), Level 1 (summaries), Level 2 (meta-summaries)
-  - `maybeCompact(messages, engine)` — triggers at 75% context
+  - `maybeCompact(messages, chatId)` — triggers at 75% context
   - Recursive summarization via LLM
   - Fact extraction: {entity, relation, value, confidence}
-  - `buildContextWindow(messages, maxTokens)` — [System] + [Facts] + [Meta] + [Summaries] + [Recent Raw]
+  - `buildContextWindow(chatId, maxTokens)` — [System] + [Facts] + [Meta] + [Summaries] + [Recent Raw]
   - Never discards — all layers persisted to IndexedDB
 
-- [ ] **ImportEngine** (`src/services/importEngine.ts`)
+- [x] **ImportEngine** (`src/services/importEngine.ts`)
   - `detectFormat(content, filename)` → ChatFormat
   - Parsers: ChatGPT, ShareGPT, Generic JSON, JSONL, CSV, Markdown, Text
   - `convertWithLLM(rawContent, engine)` — LLM fallback for unknown formats
   - `import(files: File[])` → ChatSession[]
+  - Export to JSON/MD/CSV/TXT
 
-- [ ] **CacheEngine** (`src/services/cacheEngine.ts`)
+- [x] **CacheEngine** (`src/services/cacheEngine.ts`)
   - Service Worker registration
   - Model weight caching strategy (Cache API, max-age)
   - Offline-ready app shell
+  - Persistent storage request
 
-- [ ] **ThemeEngine** (`src/services/themeEngine.ts`)
+- [x] **ThemeEngine** (`src/services/themeEngine.ts`)
   - Light / Dark / Auto (system preference)
   - Persists to localStorage + applies to document.documentElement
+  - UI components: toggle button, dropdown selector
 
-- [ ] **Utils**
-  - `formatDetector.ts` — format detection logic
-  - `tokenizer.ts` — tiktoken WASM for token estimation
-  - `helpers.ts` — date formatting, ID generation, etc.
+- [x] **Utils**
+  - `formatDetector.ts` — format detection logic with confidence scores
+  - `tokenizer.ts` — tiktoken WASM for token estimation (cl100k_base)
+  - `helpers.ts` — date formatting, ID generation, debounce, throttle, etc.
 
 ---
 
