@@ -160,7 +160,8 @@
 17. ✅ **Fix critical bugs** — Service singleton wiring, memoryEngine/importEngine mocks, null ref crashes
 18. ✅ **UI polish** — Welcome state, settings card styling, header fixes, icon assets
 19. ✅ **Ember rebrand** — Full visual overhaul, warm minimal design, dark mode verified
-20. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
+20. ✅ **Chat functional test** — Verified model select / typing / send / error handling via Playwright; fixed unhandled rejection on model-load failure
+21. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
 
 ---
 
