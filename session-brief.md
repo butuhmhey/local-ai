@@ -1,7 +1,7 @@
-# Session Brief — Local AI Chat
+# Session Brief — Ember (formerly Local AI Chat)
 
-**Last Updated:** 2026-09-07 (post-fix session)  
-**Current Phase:** Phase 3 — Pages, Components & Polish ✅ COMPLETE  
+**Last Updated:** 2026-09-07 (Ember rebrand session)  
+**Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ COMPLETE  
 **GitHub:** butuhmhey/local-ai  
 **User:** Kasper Kal (kasper.kal@proton.me)
 
@@ -88,6 +88,13 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-07 | **REBRAND**: App renamed to "Ember" — full visual overhaul with warm minimal design | All files |
+| 2026-09-07 | **REBRAND**: Complete CSS rewrite — variables.css, global.css, components.css (warm cream palette, amber accent) | src/styles/*.css |
+| 2026-09-07 | **REBRAND**: Welcome state redesigned — fire icon, "What's on your mind?", 3 feature cards | src/pages/ChatPage.ts |
+| 2026-09-07 | **REBRAND**: Sidebar Ember branding with fire logo, "Private AI" tagline | src/main.ts |
+| 2026-09-07 | **REBRAND**: Favicon → fire icon, manifest.json → Ember branding + warm theme colors | public/favicon.svg, public/manifest.json |
+| 2026-09-07 | **REBRAND**: Toast → "Ember ready", settings → "Ember v1.0.0", all "Local AI Chat" references replaced | src/main.ts, src/pages/SettingsPage.ts |
+| 2026-09-07 | Dark mode verified — warm night tones with golden (#FBBF24) accent | — |
 | 2026-09-07 | **MAJOR FIX**: Wire main.ts to use module singletons instead of creating separate instances | src/main.ts |
 | 2026-09-07 | **MAJOR FIX**: Convert memoryEngine/importEngine from export const to export let with initialize() reassignment | src/services/memoryEngine.ts, src/services/importEngine.ts |
 | 2026-09-07 | Add welcome state to ChatPage (robot icon, feature highlights) | src/pages/ChatPage.ts, src/styles/components.css |
@@ -151,7 +158,8 @@
 16. ✅ **Dev server up for user testing** — http://localhost:5173 (+5174), Codespaces-forwarded
 17. ✅ **Fix critical bugs** — Service singleton wiring, memoryEngine/importEngine mocks, null ref crashes
 18. ✅ **UI polish** — Welcome state, settings card styling, header fixes, icon assets
-19. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
+19. ✅ **Ember rebrand** — Full visual overhaul, warm minimal design, dark mode verified
+20. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
 
 ---
 
