@@ -63,14 +63,12 @@ let routeOutlet: HTMLElement;
 let sidebar: HTMLElement;
 let sidebarToggle: HTMLButtonElement;
 let navLinks: NodeListOf<HTMLAnchorElement>;
-let mobileMenuBtn: HTMLButtonElement;
 
 function cacheDOMElements(): void {
   routeOutlet = document.getElementById('route-outlet') as HTMLElement;
   sidebar = document.querySelector('.sidebar') as HTMLElement;
   sidebarToggle = document.getElementById('sidebar-toggle') as HTMLButtonElement;
   navLinks = document.querySelectorAll('[data-route]') as NodeListOf<HTMLAnchorElement>;
-  mobileMenuBtn = document.getElementById('mobile-menu-btn') as HTMLButtonElement;
 }
 
 /**
@@ -176,6 +174,11 @@ async function navigate(route: Route, params?: Record<string, string>): Promise<
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[route] || 'Ember';
 
+  // Gate the app-shell chrome (header, sidebar, mobile tabs) so pages that own
+  // their full viewport — like the landing page — render clean, edge to edge.
+  const appEl = document.getElementById('app');
+  if (appEl) appEl.classList.toggle('route-home', route === 'home');
+
   // Render the page
   app.currentRoute = route;
   await renderPage(route, params);
@@ -216,28 +219,13 @@ function setupEventListeners(): void {
     document.querySelector('.main-content')?.classList.toggle('sidebar-collapsed');
   });
 
-  // Mobile menu button
-  mobileMenuBtn?.addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-  });
-
-  // Nav link clicks
+  // Nav link clicks (sidebar links + mobile bottom tabs)
   navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const route = link.dataset.route as Route;
       navigate(route);
     });
-  });
-
-  // Close sidebar on outside click (mobile)
-  document.addEventListener('click', (e) => {
-    if (window.innerWidth < 768 && sidebar.classList.contains('open')) {
-      const target = e.target as Node;
-      if (!sidebar.contains(target) && !mobileMenuBtn?.contains(target)) {
-        sidebar.classList.remove('open');
-      }
-    }
   });
 
   // Keyboard shortcuts
@@ -347,13 +335,28 @@ function createAppShell(): void {
       </div>
     </aside>
 
-    <button id="mobile-menu-btn" class="btn btn-ghost btn-icon lg:hidden fixed bottom-4 right-4 z-dropdown" style="background: var(--bg-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg);" aria-label="Open menu" aria-expanded="false">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <line x1="3" y1="12" x2="21" y2="12"></line>
-        <line x1="3" y1="6" x2="21" y2="6"></line>
-        <line x1="3" y1="18" x2="21" y2="18"></line>
-      </svg>
-    </button>
+    <nav class="mobile-tabbar" id="mobile-tabbar" aria-label="Primary navigation">
+      <a href="#chat" data-route="chat" class="mobile-tab" aria-label="Chat">
+        <span class="mobile-tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
+        <span class="mobile-tab-label">Chat</span>
+      </a>
+      <a href="#models" data-route="models" class="mobile-tab" aria-label="Models">
+        <span class="mobile-tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2"></rect><rect x="2" y="14" width="20" height="8" rx="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg></span>
+        <span class="mobile-tab-label">Models</span>
+      </a>
+      <a href="#memory" data-route="memory" class="mobile-tab" aria-label="Memory">
+        <span class="mobile-tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5.5 4 7.5L12 20l3-3.5c2-2 4-4.5 4-7.5a7 7 0 0 0-7-7z"></path><circle cx="12" cy="9" r="2"></circle></svg></span>
+        <span class="mobile-tab-label">Memory</span>
+      </a>
+      <a href="#import" data-route="import" class="mobile-tab" aria-label="Import/Export">
+        <span class="mobile-tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></span>
+        <span class="mobile-tab-label">Import</span>
+      </a>
+      <a href="#settings" data-route="settings" class="mobile-tab" aria-label="Settings">
+        <span class="mobile-tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
+        <span class="mobile-tab-label">Settings</span>
+      </a>
+    </nav>
 
     <main class="main-content" role="main">
       <header class="header">
