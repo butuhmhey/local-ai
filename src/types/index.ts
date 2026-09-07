@@ -1,5 +1,5 @@
 /**
- * Core type definitions for Local AI Chat
+ * Core type definitions for Ember
  */
 
 /** Chat message roles */

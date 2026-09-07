@@ -287,7 +287,7 @@ export class SettingsPage {
 
     const info = createElement('div', { class: 'about-info' });
     info.append(
-      createElement('p', { children: ['Local AI Chat v1.0.0'] }),
+      createElement('p', { children: ['Ember v1.0.0'] }),
       createElement('p', { children: ['100% local, privacy-first LLM chat running in your browser via WebGPU'] }),
       createElement('p', { children: ['Powered by WebLLM (MLC-LLM) • Built with TypeScript + Vite'] }),
       createElement('p', { children: ['Open source • Zero cost • No account required'] })

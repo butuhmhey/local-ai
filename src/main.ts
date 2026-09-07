@@ -1,5 +1,5 @@
 /**
- * Local AI Chat - Main Application Entry Point
+ * Ember — Main Application Entry Point
  * Bootstraps the app, initializes services, sets up routing
  */
 
@@ -170,7 +170,7 @@ async function navigate(route: Route, params?: Record<string, string>): Promise<
     settings: 'Settings',
   };
   const titleEl = document.getElementById('page-title');
-  if (titleEl) titleEl.textContent = titles[route] || 'Local AI Chat';
+  if (titleEl) titleEl.textContent = titles[route] || 'Ember';
 
   // Render the page
   app.currentRoute = route;
@@ -259,33 +259,37 @@ function createAppShell(): void {
   const appShell = `
     <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main navigation">
       <div class="sidebar-header">
-        <div class="flex items-center gap-3">
-          <div class="avatar avatar-lg avatar-assistant" aria-hidden="true">🤖</div>
-          <div>
-            <h1 class="font-semibold text-primary truncate">Local AI Chat</h1>
-            <p class="text-xs text-muted truncate">WebLLM • Offline</p>
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
+            </svg>
+          </div>
+          <div class="sidebar-logo-text">
+            <h1>Ember</h1>
+            <p>Private AI</p>
           </div>
         </div>
         <button id="sidebar-toggle" class="btn btn-ghost btn-icon" aria-label="Toggle sidebar" aria-expanded="false">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
         </button>
       </div>
 
-      <nav class="flex-1 overflow-y-auto p-3">
+      <nav class="flex-1 overflow-y-auto" style="padding: var(--spacing-3);">
         <ul class="flex flex-col gap-1" role="list">
           <li>
-            <a href="#chat" data-route="chat" class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Chat">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <a href="#chat" data-route="chat" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Chat">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
               <span class="sidebar-label">Chat</span>
             </a>
           </li>
           <li>
-            <a href="#models" data-route="models" class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Model Library">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <a href="#models" data-route="models" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Model Library">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
                 <path d="M8 21h8"></path>
                 <path d="M12 17v4"></path>
@@ -294,8 +298,8 @@ function createAppShell(): void {
             </a>
           </li>
           <li>
-            <a href="#import" data-route="import" class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Import/Export">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <a href="#import" data-route="import" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Import/Export">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -304,8 +308,8 @@ function createAppShell(): void {
             </a>
           </li>
           <li>
-            <a href="#memory" data-route="memory" class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Memory">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <a href="#memory" data-route="memory" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Memory">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
                 <line x1="15" y1="2" x2="15" y2="22"></line>
                 <line x1="8" y1="2" x2="8" y2="22"></line>
@@ -314,8 +318,8 @@ function createAppShell(): void {
             </a>
           </li>
           <li>
-            <a href="#settings" data-route="settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Settings">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <a href="#settings" data-route="settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-secondary hover:text-primary hover:bg-hover transition-colors" aria-label="Settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"></circle>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
@@ -325,18 +329,22 @@ function createAppShell(): void {
         </ul>
       </nav>
 
-      <div class="sidebar-footer p-3 border-t border-border-color">
+      <div class="sidebar-footer" style="padding: var(--spacing-4); border-top: 1px solid var(--border-color);">
         <div class="flex items-center gap-3">
-          <div class="avatar avatar-sm avatar-assistant" aria-hidden="true">💡</div>
+          <div class="avatar avatar-sm" style="background: linear-gradient(135deg, var(--accent-primary), #B45309);" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
+            </svg>
+          </div>
           <div class="flex-1 min-w-0">
-            <p class="text-xs text-muted truncate">Running locally via WebGPU</p>
+            <p class="text-xs text-muted truncate">Runs 100% locally</p>
           </div>
         </div>
       </div>
     </aside>
 
-    <button id="mobile-menu-btn" class="btn btn-ghost btn-icon lg:hidden fixed bottom-4 right-4 z-dropdown" aria-label="Open menu" aria-expanded="false">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+    <button id="mobile-menu-btn" class="btn btn-ghost btn-icon lg:hidden fixed bottom-4 right-4 z-dropdown" style="background: var(--bg-secondary); border: 1px solid var(--border-color); box-shadow: var(--shadow-lg);" aria-label="Open menu" aria-expanded="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <line x1="3" y1="12" x2="21" y2="12"></line>
         <line x1="3" y1="6" x2="21" y2="6"></line>
         <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -344,15 +352,13 @@ function createAppShell(): void {
     </button>
 
     <main class="main-content" role="main">
-      <header class="header" style="height: var(--header-height);">
-        <div class="flex items-center justify-between h-full px-4">
+      <header class="header">
+        <div class="flex items-center justify-between h-full" style="padding: 0 var(--spacing-5);">
           <div class="flex items-center gap-3">
-            <h2 id="page-title" class="font-semibold text-primary">Chat</h2>
+            <h2 id="page-title" class="font-semibold text-primary" style="font-size: var(--font-size-base);">Chat</h2>
           </div>
           <div class="flex items-center gap-2">
-            <!-- Theme toggle will be inserted here by ThemeEngine -->
             <div id="theme-toggle-container"></div>
-            <!-- Model selector will be inserted here by ChatPage -->
             <div id="header-model-selector"></div>
           </div>
         </div>
@@ -361,7 +367,6 @@ function createAppShell(): void {
       <div id="route-outlet" class="flex-1 overflow-hidden" role="region" aria-label="Page content"></div>
     </main>
 
-    <!-- Toast container -->
     <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
   `;
 
@@ -446,11 +451,11 @@ async function bootstrap(): Promise<void> {
     await navigate(route, params);
 
     // Show ready toast
-    showToast({ type: 'success', title: 'Local AI Chat ready', message: 'All systems initialized', duration: 3000 });
+    showToast({ type: 'success', title: 'Ember ready', message: 'All systems initialized', duration: 3000 });
 
-    console.log('[Local AI Chat] Application initialized successfully');
+    console.log('[Ember] Application initialized successfully');
   } catch (error) {
-    console.error('[Local AI Chat] Failed to initialize:', error);
+    console.error('[Ember] Failed to initialize:', error);
     showToast({
       type: 'error',
       title: 'Initialization failed',

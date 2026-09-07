@@ -386,22 +386,49 @@ export class ChatPage {
     if (welcome) return; // already there
     const welcomeEl = createElement('div', { class: 'chat-welcome', id: 'chat-welcome' });
     welcomeEl.innerHTML = `
-      <div class="welcome-icon">🤖</div>
-      <h2 class="welcome-title">Local AI Chat</h2>
-      <p class="welcome-subtitle">Choose a model above, then start chatting. Everything runs locally in your browser.</p>
+      <div class="welcome-icon">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
+        </svg>
+      </div>
+      <h2 class="welcome-title">What's on your mind?</h2>
+      <p class="welcome-subtitle">Your conversations stay right here — nothing leaves your browser. Pick a model above and start a chat.</p>
       <div class="welcome-features">
         <div class="welcome-feature">
-          <span class="welcome-feature-icon">🔒</span>
-          <span>100% Private — no data leaves your device</span>
+          <div class="welcome-feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <span class="welcome-feature-title">Fully Private</span>
+          <span class="welcome-feature-desc">No data ever leaves your device</span>
         </div>
         <div class="welcome-feature">
-          <span class="welcome-feature-icon">⚡</span>
-          <span>Powered by WebGPU — real-time streaming</span>
+          <div class="welcome-feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </div>
+          <span class="welcome-feature-title">Blazing Fast</span>
+          <span class="welcome-feature-desc">Powered by WebGPU in your browser</span>
         </div>
         <div class="welcome-feature">
-          <span class="welcome-feature-icon">🧠</span>
-          <span>Auto-compacting memory keeps conversations long</span>
+          <div class="welcome-feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round">
+              <path d="M12 2a7 7 0 0 0-7 7c0 3 2 5.5 4 7.5L12 20l3-3.5c2-2 4-4.5 4-7.5a7 7 0 0 0-7-7z"></path>
+              <circle cx="12" cy="9" r="2"></circle>
+            </svg>
+          </div>
+          <span class="welcome-feature-title">Smart Memory</span>
+          <span class="welcome-feature-desc">Auto-compacting context for long chats</span>
         </div>
+      </div>
+      <div class="welcome-hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round">
+          <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
+        </svg>
+        <span>Select a model to get started</span>
       </div>
     `;
     this.chatContainer.appendChild(welcomeEl);
@@ -522,22 +549,49 @@ export class ChatPage {
     // Welcome state (shown when no messages)
     const welcomeState = createElement('div', { class: 'chat-welcome', id: 'chat-welcome' });
     welcomeState.innerHTML = `
-      <div class="welcome-icon">🤖</div>
-      <h2 class="welcome-title">Local AI Chat</h2>
-      <p class="welcome-subtitle">Choose a model above, then start chatting. Everything runs locally in your browser.</p>
+      <div class="welcome-icon">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
+        </svg>
+      </div>
+      <h2 class="welcome-title">What's on your mind?</h2>
+      <p class="welcome-subtitle">Your conversations stay right here — nothing leaves your browser. Pick a model above and start a chat.</p>
       <div class="welcome-features">
         <div class="welcome-feature">
-          <span class="welcome-feature-icon">🔒</span>
-          <span>100% Private — no data leaves your device</span>
+          <div class="welcome-feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <span class="welcome-feature-title">Fully Private</span>
+          <span class="welcome-feature-desc">No data ever leaves your device</span>
         </div>
         <div class="welcome-feature">
-          <span class="welcome-feature-icon">⚡</span>
-          <span>Powered by WebGPU — real-time streaming</span>
+          <div class="welcome-feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </div>
+          <span class="welcome-feature-title">Blazing Fast</span>
+          <span class="welcome-feature-desc">Powered by WebGPU in your browser</span>
         </div>
         <div class="welcome-feature">
-          <span class="welcome-feature-icon">🧠</span>
-          <span>Auto-compacting memory keeps conversations long</span>
+          <div class="welcome-feature-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round">
+              <path d="M12 2a7 7 0 0 0-7 7c0 3 2 5.5 4 7.5L12 20l3-3.5c2-2 4-4.5 4-7.5a7 7 0 0 0-7-7z"></path>
+              <circle cx="12" cy="9" r="2"></circle>
+            </svg>
+          </div>
+          <span class="welcome-feature-title">Smart Memory</span>
+          <span class="welcome-feature-desc">Auto-compacting context for long chats</span>
         </div>
+      </div>
+      <div class="welcome-hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round">
+          <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
+        </svg>
+        <span>Select a model to get started</span>
       </div>
     `;
     this.chatContainer.appendChild(welcomeState);
