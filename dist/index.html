@@ -12,12 +12,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-aSG7eHEi.js"></script>
+  <script type="module" crossorigin src="/assets/index-DtsjuCzH.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/vendor-Dob3nYDb.js">
-  <link rel="modulepreload" crossorigin href="/assets/webllm-D222aTiZ.js">
   <link rel="stylesheet" crossorigin href="/assets/index-C9eqj5wI.css">
 <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
 <body>
   <div id="app"></div>
+  <script>
+    // Crash catcher — if the JS bundle fails to load, show a visible message
+    // instead of a silent blank screen.
+    window.__EMBER_CRASH__ = null;
+    window.addEventListener('error', e => { window.__EMBER_CRASH__ = e.message || String(e); });
+    window.addEventListener('unhandledrejection', e => { window.__EMBER_CRASH__ = 'Unhandled rejection: ' + (e.reason?.message || e.reason); });
+    (function poll() {
+      var app = document.getElementById('app');
+      setTimeout(function () {
+        if (app && app.children.length === 0 && window.__EMBER_CRASH__) {
+          app.innerHTML = '<div style="max-width:480px;margin:20vh auto;padding:32px;font-family:system-ui;text-align:center">' +
+            '<h1 style="font-size:22px;margin:0 0 8px">Ember couldn&rsquo;t start</h1>' +
+            '<p style="color:#666;word-break:break-word">' + window.__EMBER_CRASH__ + '</p>' +
+            '<button onclick="location.reload()" style="margin-top:16px;padding:10px 18px;border:0;border-radius:10px;background:#D97706;color:#fff;font-size:14px;cursor:pointer">Reload</button>' +
+            '</div>';
+        } else if (app && app.children.length === 0) {
+          poll();
+        }
+      }, 400);
+    })();
+  </script>
 </body>
 </html>

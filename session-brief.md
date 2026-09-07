@@ -1,6 +1,6 @@
 # Session Brief — Ember (formerly Local AI Chat)
 
-**Last Updated:** 2026-09-07 (chat functional testing + fix)  
+**Last Updated:** 2026-09-07 (iOS blank-screen fix + Chat Functionality Verified)  
 **Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ COMPLETE + Chat Functionality Verified ✅  
 **GitHub:** butuhmhey/local-ai  
 **User:** Kasper Kal (kasper.kal@proton.me)
@@ -88,6 +88,7 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-07 | **FIX**: Blank cream screen on iOS (no WebGPU) — WebLLM crashed at import time. Now lazy-loaded via dynamic import (6MB deferred), pinned so UI never blocks on it; added no-WebGPU fail-fast with clear toast + inline crash catcher in index.html | src/services/webllmEngine.ts, src/pages/ChatPage.ts, index.html |
 | 2026-09-07 | **FIX + TEST**: Chat flow functionally verified via Playwright (model select ✓, type ✓, send ✓, error handling ✓). Fixed unhandled promise rejection — `loadCurrentModel()` threw before try block on WebGPU failure | src/pages/ChatPage.ts |
 | 2026-09-07 | **FIX**: vite-plugin-pwa inline manifest still had old branding (src/public conflict) — synced to Ember (name, short_name, amber theme, cream background) | vite.config.ts |
 | 2026-09-07 | **REBRAND**: App renamed to "Ember" — full visual overhaul with warm minimal design | All files |

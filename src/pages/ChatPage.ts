@@ -342,7 +342,8 @@ export class ChatPage {
     } catch (error) {
       loadingToast.remove();
       console.error('[ChatPage] Model load failed:', error);
-      this.showToast(`Failed to load ${this.currentModel.name}`, 'error');
+      // Surface the real reason (e.g. unsupported WebGPU) instead of a generic message
+      this.showToast(error instanceof Error ? error.message : `Failed to load ${this.currentModel.name}`, 'error');
       throw error;
     }
   }

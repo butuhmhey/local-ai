@@ -3,7 +3,12 @@
  * Handles model loading, streaming chat, context management, model switching
  */
 
-import { CreateMLCEngine, MLCEngineInterface, InitProgressCallback } from '@mlc-ai/web-llm';
+// WebLLM is loaded LAZILY via dynamic import(). Its module has side effects
+// that throw at import time on browsers with no WebGPU (e.g. iOS Safari),
+// which previously blanked the whole app after the CSS painted. Loading it
+// only when a model is actually requested keeps the UI alive everywhere and
+// defers a ~6MB download until it's needed.
+import type { MLCEngineInterface, InitProgressCallback } from '@mlc-ai/web-llm';
 import type {
   ChatMessage,
   ChatOptions,
@@ -23,6 +28,7 @@ export class WebLLMEngine {
   private modelState: ModelState = 'idle';
   private loadProgressCallback: ((progress: ModelLoadProgress) => void) | null = null;
   private contextWindow: number = 4096;
+  private mlcModule: Promise<typeof import('@mlc-ai/web-llm')> | null = null;
 
   /** Check if WebGPU is available */
   static isWebGPUSupported(): boolean {
@@ -74,6 +80,13 @@ export class WebLLMEngine {
       throw new Error(`Model ${modelId} not found in registry`);
     }
 
+    // Fail fast (and without downloading WebLLM) when WebGPU is unavailable —
+    // e.g. iOS browsers. Give a clear message instead of a WebLLM internals error.
+    const gpuInfo = await WebLLMEngine.getGPUInfo();
+    if (!gpuInfo.supported) {
+      throw new Error('WebGPU is not supported in this browser, so models cannot run here. Try a desktop browser with WebGPU (e.g. Chrome on macOS/Windows).');
+    }
+
     this.modelState = 'loading';
     this.currentModelId = modelId;
     this.contextWindow = modelDef.contextWindow ?? 4096;
@@ -100,7 +113,8 @@ export class WebLLMEngine {
         });
       };
 
-      // Load the model
+      // Load the WebLLM module lazily, then create the engine
+      const { CreateMLCEngine } = await this.getMLC();
       this.engine = await CreateMLCEngine(modelId, {
         initProgressCallback: progressCallback,
       });
@@ -128,6 +142,14 @@ export class WebLLMEngine {
       console.error(`[WebLLMEngine] Failed to load ${modelId}:`, error);
       throw error;
     }
+  }
+
+  /** Lazily load the WebLLM module (circular-safe, cached after first call) */
+  private async getMLC(): Promise<typeof import('@mlc-ai/web-llm')> {
+    if (!this.mlcModule) {
+      this.mlcModule = import('@mlc-ai/web-llm');
+    }
+    return this.mlcModule;
   }
 
   /** Map WebLLM stage to our stage */
