@@ -84,6 +84,7 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-07 | Dev servers running for user testing (5173 + 5174), forwarded via Codespaces | — |
 | 2026-09-07 | Fix CSS import — `components.css` wasn't loaded (1000+ lines invisible) | src/styles/global.css |
 | 2026-09-07 | Fix auto-load model error — remove default model load in ChatPage.initModelSelector() | src/pages/ChatPage.ts |
 | 2026-09-07 | Verified desktop + mobile UI clean (4 screenshots) | — |
@@ -136,7 +137,8 @@
 13. ✅ **Build verification** — `npm run build` → `dist/`
 14. ✅ **Deploy to Render** — Static site on free tier (config created: `render.yaml`)
 15. ✅ **UI testing** — Verified desktop + mobile, fixed CSS import + model auto-load error
-16. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
+16. ✅ **Dev server up for user testing** — http://localhost:5173 (+5174), Codespaces-forwarded
+17. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
 
 ---
 
