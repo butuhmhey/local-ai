@@ -1,7 +1,7 @@
 # Session Brief — Ember (formerly Local AI Chat)
 
-**Last Updated:** 2026-09-07 (Ember rebrand session)  
-**Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ COMPLETE  
+**Last Updated:** 2026-09-07 (chat functional testing + fix)  
+**Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ COMPLETE + Chat Functionality Verified ✅  
 **GitHub:** butuhmhey/local-ai  
 **User:** Kasper Kal (kasper.kal@proton.me)
 
@@ -88,6 +88,7 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-07 | **FIX + TEST**: Chat flow functionally verified via Playwright (model select ✓, type ✓, send ✓, error handling ✓). Fixed unhandled promise rejection — `loadCurrentModel()` threw before try block on WebGPU failure | src/pages/ChatPage.ts |
 | 2026-09-07 | **REBRAND**: App renamed to "Ember" — full visual overhaul with warm minimal design | All files |
 | 2026-09-07 | **REBRAND**: Complete CSS rewrite — variables.css, global.css, components.css (warm cream palette, amber accent) | src/styles/*.css |
 | 2026-09-07 | **REBRAND**: Welcome state redesigned — fire icon, "What's on your mind?", 3 feature cards | src/pages/ChatPage.ts |

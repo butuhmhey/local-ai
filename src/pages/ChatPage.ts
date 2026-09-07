@@ -167,7 +167,13 @@ export class ChatPage {
 
     // Check if model is loaded
     if (!webllmEngine.isReady()) {
-      await this.loadCurrentModel();
+      try {
+        await this.loadCurrentModel();
+      } catch {
+        // loadCurrentModel already shows its own error toast — abort the send
+        // without throwing, so no unhandled promise rejection reaches the app.
+        return;
+      }
     }
 
     // Create user message
