@@ -454,15 +454,9 @@ export class ChatPage {
       selectorContainer.appendChild(this.modelSelector.getElement());
     }
 
-    // Load default model if none selected
-    if (!this.currentModel) {
-      const defaultModel = modelRegistry.getDefault(8);
-      if (defaultModel) {
-        this.currentModel = defaultModel;
-        this.modelSelector.setSelectedModel(defaultModel.id);
-        await this.loadCurrentModel();
-      }
-    }
+    // Don't auto-load a model on first visit — user picks from selector.
+    // Auto-loading can fail when WebGPU is unavailable (headless, older
+    // browsers) or the default model isn't in WebLLM's model_list.
   }
 
   /** Load last active chat */

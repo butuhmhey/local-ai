@@ -188,7 +188,7 @@ export function createElement<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   attrs: {
     class?: string;
-    style?: Partial<CSSStyleDeclaration>;
+    style?: Partial<CSSStyleDeclaration> | string;
     children?: (Node | string)[];
     [key: string]: any
   } = {}
@@ -200,7 +200,15 @@ export function createElement<K extends keyof HTMLElementTagNameMap>(
     element.className = className;
   }
   if (style) {
-    Object.assign(element.style, style);
+    if (typeof style === 'string') {
+      element.setAttribute('style', style);
+    } else {
+      for (const [prop, val] of Object.entries(style)) {
+        if (val !== undefined && val !== null) {
+          (element.style as any)[prop] = val;
+        }
+      }
+    }
   }
 
   for (const [key, value] of Object.entries(attributes)) {

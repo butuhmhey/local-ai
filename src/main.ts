@@ -47,12 +47,20 @@ interface AppState {
 /** Global app instance */
 let app: AppState;
 
-/** DOM elements */
-const routeOutlet = document.getElementById('route-outlet') as HTMLElement;
-const sidebar = document.querySelector('.sidebar') as HTMLElement;
-const sidebarToggle = document.getElementById('sidebar-toggle') as HTMLButtonElement;
-const navLinks = document.querySelectorAll('[data-route]') as NodeListOf<HTMLAnchorElement>;
-const mobileMenuBtn = document.getElementById('mobile-menu-btn') as HTMLButtonElement;
+/** DOM elements — queried after createAppShell() inserts the HTML */
+let routeOutlet: HTMLElement;
+let sidebar: HTMLElement;
+let sidebarToggle: HTMLButtonElement;
+let navLinks: NodeListOf<HTMLAnchorElement>;
+let mobileMenuBtn: HTMLButtonElement;
+
+function cacheDOMElements(): void {
+  routeOutlet = document.getElementById('route-outlet') as HTMLElement;
+  sidebar = document.querySelector('.sidebar') as HTMLElement;
+  sidebarToggle = document.getElementById('sidebar-toggle') as HTMLButtonElement;
+  navLinks = document.querySelectorAll('[data-route]') as NodeListOf<HTMLAnchorElement>;
+  mobileMenuBtn = document.getElementById('mobile-menu-btn') as HTMLButtonElement;
+}
 
 /**
  * Initialize all services
@@ -73,9 +81,9 @@ async function initializeServices(): Promise<AppState['services']> {
   const webllm = new WebLLMEngine();
   await webllm.init();
 
-  const memory = new MemoryEngine(webllm, storage);
+  const memory = MemoryEngine.initialize(webllm, storage);
 
-  const importEngine = new ImportEngine(webllm, storage);
+  const importEngine = ImportEngine.initialize(webllm, storage);
 
   return { storage, theme, cache, webllm, memory, import: importEngine, models };
 }
@@ -386,6 +394,9 @@ async function bootstrap(): Promise<void> {
   try {
     // Create app shell
     createAppShell();
+
+    // Cache DOM elements after shell is in the DOM
+    cacheDOMElements();
 
     // Initialize services
     const services = await initializeServices();
