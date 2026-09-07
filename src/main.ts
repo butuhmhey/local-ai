@@ -25,6 +25,7 @@ import { importEngine } from './services/importEngine.js';
 import { modelRegistry } from './models/modelRegistry.js';
 
 // Page imports (will be created in Phase 3)
+import { LandingPage } from './pages/LandingPage.js';
 import { ChatPage } from './pages/ChatPage.js';
 import { ModelLibraryPage } from './pages/ModelLibraryPage.js';
 import { ImportExportPage } from './pages/ImportExportPage.js';
@@ -45,6 +46,7 @@ interface AppState {
     models: ModelRegistry;
   };
   pages: {
+    home: LandingPage;
     chat: ChatPage;
     models: ModelLibraryPage;
     import: ImportExportPage;
@@ -116,6 +118,7 @@ async function initializeServices(): Promise<AppState['services']> {
  */
 function initializePages(): AppState['pages'] {
   return {
+    home: new LandingPage(),
     chat: new ChatPage(),
     models: new ModelLibraryPage(),
     import: new ImportExportPage(),
@@ -163,6 +166,7 @@ async function navigate(route: Route, params?: Record<string, string>): Promise<
 
   // Update page title
   const titles: Record<Route, string> = {
+    home: 'Home',
     chat: 'Chat',
     models: 'Models',
     import: 'Import/Export',
@@ -181,7 +185,7 @@ async function navigate(route: Route, params?: Record<string, string>): Promise<
  * Parse hash into route + params
  */
 function parseHash(): { route: Route; params: Record<string, string> } {
-  const hash = window.location.hash.slice(1) || 'chat';
+  const hash = window.location.hash.slice(1) || 'home';
   const [routePart, ...paramParts] = hash.split('/');
   const route = routePart as Route;
 

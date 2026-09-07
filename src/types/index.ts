@@ -236,7 +236,7 @@ export interface AppSettings {
 }
 
 /** Route types */
-export type Route = 'chat' | 'models' | 'import' | 'memory' | 'settings';
+export type Route = 'home' | 'chat' | 'models' | 'import' | 'memory' | 'settings';
 
 /** Router event */
 export interface RouteChangeEvent extends CustomEvent {
