@@ -5,11 +5,13 @@
 
 import { createElement, formatBytes } from '../utils/helpers.js';
 import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
+import { storageEngine } from '../services/storageEngine.js';
+import { requestModelDownload, type DownloadHandler } from './DownloadPrompt.js';
 
 export interface ModelSelectorOptions {
   selectedModelId?: string;
   onSelect?: (model: ModelInfo) => void;
-  onDownload?: (model: ModelInfo) => void;
+  onDownload?: DownloadHandler;
   onDelete?: (model: ModelInfo) => void;
   showDownload?: boolean;
   showDelete?: boolean;
@@ -28,6 +30,7 @@ export class ModelSelector {
   private options!: ModelSelectorOptions;
   private allModels: ModelInfo[] = [];
   private filteredModels: ModelInfo[] = [];
+  private downloadedIds: Set<string> = new Set();
   private isOpen = false;
   private debouncedFilter: () => void;
 
@@ -45,6 +48,7 @@ export class ModelSelector {
     this.element = this.createElement();
     this.bindEvents();
     this.applyFilters();
+    this.refreshDownloadedStatus();
   }
 
   getElement(): HTMLElement {
@@ -69,10 +73,23 @@ export class ModelSelector {
     this.applyFilters();
   }
 
-  /** Refresh model list (e.g., after download) */
+  /** Refresh model list + downloaded status (e.g., after download) */
   refresh(): void {
     this.allModels = modelRegistry.getAllModels();
     this.applyFilters();
+    this.refreshDownloadedStatus();
+  }
+
+  /** Load the set of downloaded model ids from storage (async) */
+  private async refreshDownloadedStatus(): Promise<void> {
+    try {
+      const downloaded = await storageEngine.getDownloadedModels();
+      this.downloadedIds = new Set(downloaded.map(m => m.modelId));
+      this.renderList();
+      this.updateListSelection();
+    } catch (error) {
+      console.warn('[ModelSelector] Failed to load downloaded models:', error);
+    }
   }
 
   /** Open dropdown */

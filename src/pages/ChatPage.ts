@@ -10,7 +10,8 @@ import { webllmEngine, WebLLMEngine } from '../services/webllmEngine.js';
 import { memoryEngine } from '../services/memoryEngine.js';
 import { storageEngine } from '../services/storageEngine.js';
 import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
-import type { Message, ChatSession } from '../types/index.js';
+import { requestModelDownload } from '../components/DownloadPrompt.js';
+import type { Message, ChatSession, ModelLoadProgress } from '../types/index.js';
 
 export class ChatPage {
   private element!: HTMLElement;
@@ -173,13 +174,10 @@ export class ChatPage {
         this.showToast('WebGPU is not supported in this browser — models can’t run here. Use Safari/Chrome with WebGPU support.', 'error');
         return;
       }
-      try {
-        await this.loadCurrentModel();
-      } catch {
-        // loadCurrentModel already shows its own error toast — abort the send
-        // without throwing, so no unhandled promise rejection reaches the app.
-        return;
-      }
+      // loadCurrentModel asks before downloading and shows its own error toast.
+      // It returns false when the user declines the download or it failed — abort the send.
+      const ready = await this.loadCurrentModel();
+      if (!ready) return;
     }
 
     // Create user message
@@ -322,6 +320,7 @@ export class ChatPage {
           .map(b => b['options'].message);
 
         await webllmEngine.switchModel(model.id, messages);
+        await storageEngine.recordModelDownload(model.id, (model.downloadSizeMB ?? 0) * 1024 * 1024);
         this.showToast(`Switched to ${model.name}`, 'success');
       } catch (error) {
         console.error('[ChatPage] Model switch failed:', error);
@@ -332,11 +331,51 @@ export class ChatPage {
     await this.saveCurrentChat();
   }
 
-  /** Load current model */
-  private async loadCurrentModel(): Promise<void> {
-    if (!this.currentModel) return;
+  /** Download a model (asked-first), load it into the engine, and record it.
+   *  Returns true when the engine is ready to chat with this model. */
+  private async downloadModelForUse(model: ModelInfo, onProgress?: (p: ModelLoadProgress) => void): Promise<boolean> {
+    // Fail fast with a clear message if there's no WebGPU at all
+    const gpu = await WebLLMEngine.getGPUInfo();
+    if (!gpu.supported) {
+      this.showToast('WebGPU is not supported in this browser — models can’t run here. Use Safari/Chrome with WebGPU support.', 'error');
+      return false;
+    }
+    try {
+      await webllmEngine.loadModel(model.id, onProgress);
+      await storageEngine.recordModelDownload(model.id, (model.downloadSizeMB ?? 0) * 1024 * 1024);
+      return true;
+    } catch (error) {
+      console.error('[ChatPage] Model download failed:', error);
+      this.showToast(error instanceof Error ? error.message : `Failed to download ${model.name}`, 'error');
+      return false;
+    }
+  }
 
-    const loadingToast = this.showToast(`Preparing to load ${this.currentModel.name}…`, 'info');
+  /** Load current model. Returns true when the engine is ready to chat.
+   *  If the model isn't downloaded yet, asks for the download FIRST — a
+   *  multi-gigabyte download should never start without explicit consent. */
+  private async loadCurrentModel(): Promise<boolean> {
+    if (!this.currentModel) return false;
+    const model = this.currentModel;
+
+    try {
+      const isDownloaded = await storageEngine.isModelDownloaded(model.id);
+      if (!isDownloaded) {
+        // Ask before downloading. On success downloadModelForUse already
+        // loaded the engine, so the model is ready to chat with.
+        const ok = await requestModelDownload(model, this.downloadModelForUse.bind(this));
+        if (ok) {
+          this.showToast(`${model.name} ready`, 'success');
+          return true;
+        }
+        return false; // user declined or download failed — don't send
+      }
+    } catch (error) {
+      console.warn('[ChatPage] Could not check download state:', error);
+    }
+
+    // Already downloaded — load into memory with progress feedback.
+    const loadingToast = this.showToast(`Preparing to load ${model.name}…`, 'info');
     let stalled = false;
     // If nothing has progressed after 45s, tell the user it may be a browser/WebGPU
     // support problem instead of leaving them staring at an endless "Loading…".
@@ -346,7 +385,7 @@ export class ChatPage {
     }, 45000);
 
     try {
-      await webllmEngine.loadModel(this.currentModel.id, (progress: any) => {
+      await webllmEngine.loadModel(model.id, (progress: any) => {
         const p = typeof progress === 'number' ? progress : progress?.progress ?? 0;
         const stage = progress?.stage as string;
         const rawMsg = progress?.message as string | undefined;
@@ -357,20 +396,22 @@ export class ChatPage {
         if (p < 100 && !stalled) {
           const label = stageLabel[stage] ?? 'Loading';
           loadingToast.textContent = rawMsg && rawMsg.length < 90
-            ? `${this.currentModel!.name} — ${rawMsg}`
-            : `${this.currentModel!.name} — ${label} ${Math.round(p * 100)}%`;
+            ? `${model.name} — ${rawMsg}`
+            : `${model.name} — ${label} ${Math.round(p * 100)}%`;
         }
       });
+      await storageEngine.recordModelDownload(model.id, (model.downloadSizeMB ?? 0) * 1024 * 1024);
       clearTimeout(stallTimer);
       loadingToast.remove();
-      this.showToast(`${this.currentModel.name} ready`, 'success');
+      this.showToast(`${model.name} ready`, 'success');
+      return true;
     } catch (error) {
       clearTimeout(stallTimer);
       loadingToast.remove();
       console.error('[ChatPage] Model load failed:', error);
       // Surface the real reason (e.g. unsupported WebGPU) instead of a generic message
-      this.showToast(error instanceof Error ? error.message : `Failed to load ${this.currentModel.name}`, 'error');
-      throw error;
+      this.showToast(error instanceof Error ? error.message : `Failed to load ${model.name}`, 'error');
+      return false;
     }
   }
 

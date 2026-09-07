@@ -8,6 +8,7 @@ import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
 import { cacheEngine } from '../services/cacheEngine.js';
 import { webllmEngine } from '../services/webllmEngine.js';
 import { storageEngine } from '../services/storageEngine.js';
+import type { ModelLoadProgress } from '../types/index.js';
 
 export class ModelLibraryPage {
   private element!: HTMLElement;
@@ -71,7 +72,7 @@ export class ModelLibraryPage {
     this.modelSelector = new ModelSelector({
       showDownload: true,
       showDelete: true,
-      onDownload: (model) => this.downloadModel(model),
+      onDownload: (model, onProgress) => this.downloadModel(model, onProgress),
       onDelete: (model) => this.deleteModel(model),
     });
     filtersSection.appendChild(this.modelSelector.getElement());
@@ -103,9 +104,10 @@ export class ModelLibraryPage {
   }
 
   private async updateDownloadedStatus(): Promise<void> {
-    // Get downloaded models from cache engine
-    const cachedModels = await cacheEngine.getCachedModels();
-    const cachedIds = new Set(cachedModels.map(m => m.modelId));
+    // Get downloaded models from storage (source of truth — records every
+    // completed download, unlike Cache API inspection which is unreliable).
+    const downloaded = await storageEngine.getDownloadedModels();
+    const cachedIds = new Set(downloaded.map(m => m.modelId));
 
     // Update model downloaded status (add temporary property)
     for (const model of this.allModels) {
@@ -258,9 +260,9 @@ export class ModelLibraryPage {
     return card;
   }
 
-  private async downloadModel(model: ModelInfo): Promise<void> {
+  private async downloadModel(model: ModelInfo, onProgress?: (p: ModelLoadProgress) => void): Promise<boolean> {
     const card = this.element.querySelector(`[data-model-id="${model.id}"]`) as HTMLElement;
-    if (!card) return;
+    if (!card) return false;
 
     const progressEl = card.querySelector('.model-card-progress') as HTMLElement;
     const progressFill = card.querySelector('.progress-fill') as HTMLElement;
@@ -276,11 +278,12 @@ export class ModelLibraryPage {
         const p = typeof progress === 'number' ? progress : progress?.progress ?? 0;
         progressFill.style.width = `${p * 100}%`;
         progressText.textContent = `${Math.round(p * 100)}%`;
+        if (onProgress) onProgress(progress as ModelLoadProgress);
       });
 
-      // Mark as downloaded
+      // Mark as downloaded in storage — this is what gates selection everywhere.
+      await storageEngine.recordModelDownload(model.id, (model.downloadSizeMB ?? 0) * 1024 * 1024);
       (model as any).downloaded = true;
-      // Model is cached by WebLLM engine automatically
 
       // Update UI
       this.updateDownloadedStatus();
@@ -288,11 +291,13 @@ export class ModelLibraryPage {
       this.modelSelector.refresh();
 
       this.showToast(`${model.name} downloaded successfully`, 'success');
+      return true;
     } catch (error) {
       console.error('[ModelLibraryPage] Download failed:', error);
       this.showToast(`Failed to download ${model.name}`, 'error');
       progressEl.classList.add('hidden');
       if (downloadBtn) downloadBtn.disabled = false;
+      return false;
     }
   }
 

@@ -237,6 +237,61 @@
   border-top: 1px solid var(--border-color);
 }
 
+/* ===== Download Prompt ===== */
+.download-prompt { max-width: 440px; }
+.download-prompt-overlay { padding: var(--spacing-4); }
+.download-prompt-name { font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--spacing-2); }
+.download-prompt-desc { color: var(--text-secondary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-4); }
+.download-prompt-note {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: flex-start;
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--accent-primary-soft);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  margin-bottom: var(--spacing-4);
+}
+.download-prompt-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+}
+.download-prompt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+.download-prompt-progress { margin-bottom: var(--spacing-4); }
+.download-prompt-stage { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-secondary); }
+.download-prompt-bar {
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: var(--spacing-2) 0;
+  border: 1px solid var(--border-color);
+}
+.download-prompt-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-warning));
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base) ease-out;
+}
+.download-prompt-status { font-size: var(--font-size-xs); color: var(--text-muted); }
+.download-prompt-pct { font-size: var(--font-size-xs); color: var(--text-muted); float: right; }
+
 /* ===== Toast ===== */
 .toast-container {
   position: fixed;
@@ -690,6 +745,15 @@
 .model-item-name { font-size: var(--font-size-sm); font-weight: 600; color: var(--text-primary); }
 .model-item-details { display: flex; gap: var(--spacing-3); font-size: var(--font-size-xs); color: var(--text-muted); }
 .model-item-desc { font-size: var(--font-size-xs); color: var(--text-secondary); line-height: 1.4; }
+.model-item-dl-hint {
+  font-size: var(--font-size-xs);
+  color: var(--accent-primary);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.model-item.downloaded { opacity: 0.95; }
 .model-item-actions { display: flex; align-items: center; gap: var(--spacing-2); flex-shrink: 0; }
 .model-action-btn {
   padding: 4px;
