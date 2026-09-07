@@ -377,10 +377,44 @@ export class ChatPage {
   private clearMessages(): void {
     this.chatContainer.innerHTML = '';
     this.messageBubbles.clear();
+    // Re-add welcome state
+    this.showWelcome();
+  }
+
+  private showWelcome(): void {
+    const welcome = this.chatContainer.querySelector('#chat-welcome');
+    if (welcome) return; // already there
+    const welcomeEl = createElement('div', { class: 'chat-welcome', id: 'chat-welcome' });
+    welcomeEl.innerHTML = `
+      <div class="welcome-icon">🤖</div>
+      <h2 class="welcome-title">Local AI Chat</h2>
+      <p class="welcome-subtitle">Choose a model above, then start chatting. Everything runs locally in your browser.</p>
+      <div class="welcome-features">
+        <div class="welcome-feature">
+          <span class="welcome-feature-icon">🔒</span>
+          <span>100% Private — no data leaves your device</span>
+        </div>
+        <div class="welcome-feature">
+          <span class="welcome-feature-icon">⚡</span>
+          <span>Powered by WebGPU — real-time streaming</span>
+        </div>
+        <div class="welcome-feature">
+          <span class="welcome-feature-icon">🧠</span>
+          <span>Auto-compacting memory keeps conversations long</span>
+        </div>
+      </div>
+    `;
+    this.chatContainer.appendChild(welcomeEl);
+  }
+
+  private hideWelcome(): void {
+    const welcome = this.chatContainer.querySelector('#chat-welcome');
+    if (welcome) welcome.remove();
   }
 
   /** Add message bubble to chat */
   private addMessageBubble(message: Message, isStreaming: boolean): void {
+    this.hideWelcome();
     const bubble = new MessageBubble({
       message,
       isStreaming,
@@ -484,6 +518,29 @@ export class ChatPage {
 
     // Chat container
     this.chatContainer = createElement('div', { class: 'chat-container' });
+
+    // Welcome state (shown when no messages)
+    const welcomeState = createElement('div', { class: 'chat-welcome', id: 'chat-welcome' });
+    welcomeState.innerHTML = `
+      <div class="welcome-icon">🤖</div>
+      <h2 class="welcome-title">Local AI Chat</h2>
+      <p class="welcome-subtitle">Choose a model above, then start chatting. Everything runs locally in your browser.</p>
+      <div class="welcome-features">
+        <div class="welcome-feature">
+          <span class="welcome-feature-icon">🔒</span>
+          <span>100% Private — no data leaves your device</span>
+        </div>
+        <div class="welcome-feature">
+          <span class="welcome-feature-icon">⚡</span>
+          <span>Powered by WebGPU — real-time streaming</span>
+        </div>
+        <div class="welcome-feature">
+          <span class="welcome-feature-icon">🧠</span>
+          <span>Auto-compacting memory keeps conversations long</span>
+        </div>
+      </div>
+    `;
+    this.chatContainer.appendChild(welcomeState);
 
     // Compact indicator
     this.compactIndicator = new CompactIndicator({

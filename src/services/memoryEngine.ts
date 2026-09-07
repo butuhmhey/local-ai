@@ -47,8 +47,11 @@ export class MemoryEngine {
   }
 
   static initialize(webllm: WebLLMEngine, storage: StorageEngine): MemoryEngine {
-    MemoryEngine.instance = new MemoryEngine(webllm, storage);
-    return MemoryEngine.instance;
+    const instance = new MemoryEngine(webllm, storage);
+    MemoryEngine.instance = instance;
+    // Reassign the module singleton so pages using `memoryEngine` get the real engine
+    memoryEngine = instance;
+    return instance;
   }
 
   /** Update settings */
@@ -366,8 +369,9 @@ export class MemoryEngine {
   }
 }
 
-// Export singleton (will be properly initialized in main.ts)
-export const memoryEngine = new MemoryEngine(
+// Singleton placeholder until MemoryEngine.initialize() is called in main.ts.
+// initialize() reassigns this binding so pages get the real, wired engine.
+export let memoryEngine: MemoryEngine = new MemoryEngine(
   { isReady: () => false, getContextUsage: () => ({ used: 0, total: 4096, percentage: 0 }), estimateTokens: (text: string) => Math.ceil(text.length / 4) } as any,
-  { getMessages: async () => [] } as any
+  { getMessages: async () => [], getMemoryStatsSync: () => ({ totalMessages: 0, totalFacts: 0, totalSummaries: 0, totalTokens: 0, lastCompactedAt: null }) } as any
 );

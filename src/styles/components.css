@@ -781,6 +781,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-4);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
 }
 
 .chat-header h1 {
@@ -799,6 +801,61 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);
+}
+
+/* Welcome state */
+.chat-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex: 1;
+  padding: var(--spacing-8) var(--spacing-4);
+  animation: fadeIn var(--transition-slow) ease-out;
+}
+
+.welcome-icon {
+  font-size: 64px;
+  margin-bottom: var(--spacing-4);
+}
+
+.welcome-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.welcome-subtitle {
+  font-size: var(--font-size-base);
+  color: var(--text-muted);
+  max-width: 400px;
+  margin-bottom: var(--spacing-6);
+  line-height: 1.6;
+}
+
+.welcome-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  max-width: 360px;
+}
+
+.welcome-feature {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.welcome-feature-icon {
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
 }
 
 .chat-input-wrapper {
@@ -1638,6 +1695,24 @@
 
 .settings-section {
   margin-bottom: var(--spacing-6);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.settings-section h2 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: 1px solid var(--border-color);
+  margin: 0;
+}
+
+.settings-section .setting-group:last-child {
+  margin-bottom: 0;
 }
 
 .setting-group {

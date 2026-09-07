@@ -55,8 +55,11 @@ export class ImportEngine {
   }
 
   static initialize(webllm: WebLLMEngine, storage: StorageEngine): ImportEngine {
-    ImportEngine.instance = new ImportEngine(webllm, storage);
-    return ImportEngine.instance;
+    const instance = new ImportEngine(webllm, storage);
+    ImportEngine.instance = instance;
+    // Reassign the module singleton so pages using `importEngine` get the real engine
+    importEngine = instance;
+    return instance;
   }
 
   /** Detect format from file content and filename */
@@ -680,8 +683,9 @@ JSON:`;
   }
 }
 
-// Export singleton (will be properly initialized in main.ts)
-export const importEngine = new ImportEngine(
+// Singleton placeholder until ImportEngine.initialize() is called in main.ts.
+// initialize() reassigns this binding so pages get the real, wired engine.
+export let importEngine: ImportEngine = new ImportEngine(
   { isReady: () => false, chat: async () => '', streamChat: async function* () {}, loadModel: async () => {}, switchModel: async () => {}, getContextUsage: () => ({ used: 0, total: 4096, percentage: 0 }), estimateTokens: (text: string) => Math.ceil(text.length / 4), generateSummary: async () => '', extractFacts: async () => [] } as any,
   { getChat: async () => null, getMessages: async () => [], addMessage: async () => '', createChat: async () => ({ id: '', title: '', modelId: '', createdAt: 0, updatedAt: 0 }), updateChat: async () => {}, deleteMessagesForChat: async () => {}, exportChat: async () => null, exportAllData: async () => ({}), importAllData: async () => {}, clearAll: async () => {}, deleteMemoryItem: async () => {}, clearMemory: async () => {} } as any
 );

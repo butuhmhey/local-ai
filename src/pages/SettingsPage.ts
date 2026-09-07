@@ -78,7 +78,7 @@ export class SettingsPage {
   }
 
   private createThemeSection(): HTMLElement {
-    const section = createElement('section', { class: 'settings-section card' });
+    const section = createElement('section', { class: 'settings-section' });
     section.appendChild(createElement('h2', { children: ['🎨 Appearance'] }));
 
     // Theme selector
@@ -103,7 +103,7 @@ export class SettingsPage {
   }
 
   private createChatSection(): HTMLElement {
-    const section = createElement('section', { class: 'settings-section card' });
+    const section = createElement('section', { class: 'settings-section' });
     section.appendChild(createElement('h2', { children: ['💬 Chat'] }));
 
     // Default model
@@ -144,7 +144,7 @@ export class SettingsPage {
   }
 
   private createMemorySection(): HTMLElement {
-    const section = createElement('section', { class: 'settings-section card' });
+    const section = createElement('section', { class: 'settings-section' });
     section.appendChild(createElement('h2', { children: ['🧠 Memory & Compaction'] }));
 
     // Auto-compact toggle
@@ -185,20 +185,20 @@ export class SettingsPage {
 
     // Force compact button
     const forceCompactGroup = createElement('div', { class: 'setting-group' });
-    forceCompactGroup.append(
-      createElement('button', {
-        class: 'btn btn-secondary',
-        children: ['🗜️ Compact All Conversations Now'],
-        onClick: () => this.forceCompactAll(),
-      })
-    );
+    const forceCompactBtn = createElement('button', {
+      class: 'btn btn-secondary force-compact-btn',
+      id: 'force-compact-btn',
+      children: ['🗜️ Compact All Conversations Now'],
+      onClick: () => this.forceCompactAll(),
+    });
+    forceCompactGroup.appendChild(forceCompactBtn);
 
     section.append(autoCompactGroup, thresholdGroup, forceCompactGroup);
     return section;
   }
 
   private createModelsSection(): HTMLElement {
-    const section = createElement('section', { class: 'settings-section card' });
+    const section = createElement('section', { class: 'settings-section' });
     section.appendChild(createElement('h2', { children: ['🤖 Models'] }));
 
     // Auto-download
@@ -231,7 +231,7 @@ export class SettingsPage {
   }
 
   private createDataSection(): HTMLElement {
-    const section = createElement('section', { class: 'settings-section card' });
+    const section = createElement('section', { class: 'settings-section' });
     section.appendChild(createElement('h2', { children: ['💾 Data Management'] }));
 
     // Export all data
@@ -282,7 +282,7 @@ export class SettingsPage {
   }
 
   private createAboutSection(): HTMLElement {
-    const section = createElement('section', { class: 'settings-section card' });
+    const section = createElement('section', { class: 'settings-section' });
     section.appendChild(createElement('h2', { children: ['ℹ️ About'] }));
 
     const info = createElement('div', { class: 'about-info' });
@@ -374,7 +374,8 @@ export class SettingsPage {
   }
 
   private async forceCompactAll(): Promise<void> {
-    const btn = this.element.querySelector('.settings-section button[onclick*="forceCompactAll"]') as HTMLButtonElement;
+    const btn = this.element.querySelector('#force-compact-btn') as HTMLButtonElement;
+    if (!btn) return;
     btn.disabled = true;
     btn.textContent = 'Compacting...';
 

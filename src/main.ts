@@ -6,14 +6,23 @@
 import './styles/global.css';
 import { Route } from './types/index.js';
 
-// Service imports (will be created in Phase 2)
-import { StorageEngine } from './services/storageEngine.js';
-import { ThemeEngine } from './services/themeEngine.js';
-import { CacheEngine } from './services/cacheEngine.js';
-import { WebLLMEngine } from './services/webllmEngine.js';
+// Service classes (used for AppState type + static initializers)
+import type { StorageEngine } from './services/storageEngine.js';
+import type { ThemeEngine } from './services/themeEngine.js';
+import type { CacheEngine } from './services/cacheEngine.js';
+import type { WebLLMEngine } from './services/webllmEngine.js';
 import { MemoryEngine } from './services/memoryEngine.js';
 import { ImportEngine } from './services/importEngine.js';
-import { ModelRegistry } from './models/modelRegistry.js';
+import type { ModelRegistry } from './models/modelRegistry.js';
+
+// Module singletons — the same instances pages import and use
+import { storageEngine } from './services/storageEngine.js';
+import { themeEngine } from './services/themeEngine.js';
+import { cacheEngine } from './services/cacheEngine.js';
+import { webllmEngine } from './services/webllmEngine.js';
+import { memoryEngine } from './services/memoryEngine.js';
+import { importEngine } from './services/importEngine.js';
+import { modelRegistry } from './models/modelRegistry.js';
 
 // Page imports (will be created in Phase 3)
 import { ChatPage } from './pages/ChatPage.js';
@@ -64,28 +73,42 @@ function cacheDOMElements(): void {
 
 /**
  * Initialize all services
+ *
+ * IMPORTANT: Pages import module-level singletons (storageEngine, webllmEngine,
+ * etc.) directly. We must initialize THOSE singletons — not create separate
+ * instances. This ensures pages and main.ts share the same state.
  */
 async function initializeServices(): Promise<AppState['services']> {
-  // Initialize in dependency order
-  const storage = new StorageEngine();
-  await storage.init();
+  // Storage — singleton auto-inits via ensureDB(), but call init eagerly
+  await storageEngine.init();
 
-  const theme = new ThemeEngine();
-  theme.init();
+  // Theme — applies data-theme to <html>, loads from localStorage
+  themeEngine.init();
+  // Insert the theme toggle into the header container
+  const themeContainer = document.getElementById('theme-toggle-container');
+  if (themeContainer) {
+    themeContainer.appendChild(themeEngine.createToggleButton());
+  }
 
-  const cache = new CacheEngine();
-  await cache.register();
+  // Service Worker / model caching
+  await cacheEngine.register();
 
-  const models = new ModelRegistry();
+  // WebLLM — checks for WebGPU (warns, doesn't throw if unavailable)
+  await webllmEngine.init();
 
-  const webllm = new WebLLMEngine();
-  await webllm.init();
+  // Wire memory and import engines to the real services
+  MemoryEngine.initialize(webllmEngine, storageEngine);
+  ImportEngine.initialize(webllmEngine, storageEngine);
 
-  const memory = MemoryEngine.initialize(webllm, storage);
-
-  const importEngine = ImportEngine.initialize(webllm, storage);
-
-  return { storage, theme, cache, webllm, memory, import: importEngine, models };
+  return {
+    storage: storageEngine,
+    theme: themeEngine,
+    cache: cacheEngine,
+    webllm: webllmEngine,
+    memory: memoryEngine,
+    import: importEngine,
+    models: modelRegistry,
+  };
 }
 
 /**
