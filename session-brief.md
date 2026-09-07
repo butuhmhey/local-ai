@@ -89,6 +89,7 @@
 | Time | Change | Files |
 |------|--------|-------|
 | 2026-09-07 | **FIX + TEST**: Chat flow functionally verified via Playwright (model select ✓, type ✓, send ✓, error handling ✓). Fixed unhandled promise rejection — `loadCurrentModel()` threw before try block on WebGPU failure | src/pages/ChatPage.ts |
+| 2026-09-07 | **FIX**: vite-plugin-pwa inline manifest still had old branding (src/public conflict) — synced to Ember (name, short_name, amber theme, cream background) | vite.config.ts |
 | 2026-09-07 | **REBRAND**: App renamed to "Ember" — full visual overhaul with warm minimal design | All files |
 | 2026-09-07 | **REBRAND**: Complete CSS rewrite — variables.css, global.css, components.css (warm cream palette, amber accent) | src/styles/*.css |
 | 2026-09-07 | **REBRAND**: Welcome state redesigned — fire icon, "What's on your mind?", 3 feature cards | src/pages/ChatPage.ts |
