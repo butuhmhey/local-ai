@@ -6,7 +6,7 @@ import { createElement, generateId, formatTime, escapeHtml, truncate } from '../
 import { MessageBubble, createStreamingBubble } from '../components/MessageBubble.js';
 import { ModelSelector, createCompactModelSelector } from '../components/ModelSelector.js';
 import { CompactIndicator } from '../components/CompactIndicator.js';
-import { webllmEngine } from '../services/webllmEngine.js';
+import { webllmEngine, WebLLMEngine } from '../services/webllmEngine.js';
 import { memoryEngine } from '../services/memoryEngine.js';
 import { storageEngine } from '../services/storageEngine.js';
 import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
@@ -167,6 +167,12 @@ export class ChatPage {
 
     // Check if model is loaded
     if (!webllmEngine.isReady()) {
+      // Fail fast with a clear message if there's no WebGPU at all
+      const gpu = await WebLLMEngine.getGPUInfo();
+      if (!gpu.supported) {
+        this.showToast('WebGPU is not supported in this browser — models can’t run here. Use Safari/Chrome with WebGPU support.', 'error');
+        return;
+      }
       try {
         await this.loadCurrentModel();
       } catch {
@@ -330,16 +336,36 @@ export class ChatPage {
   private async loadCurrentModel(): Promise<void> {
     if (!this.currentModel) return;
 
-    const loadingToast = this.showToast(`Loading ${this.currentModel.name}...`, 'info');
+    const loadingToast = this.showToast(`Preparing to load ${this.currentModel.name}…`, 'info');
+    let stalled = false;
+    // If nothing has progressed after 45s, tell the user it may be a browser/WebGPU
+    // support problem instead of leaving them staring at an endless "Loading…".
+    const stallTimer = setTimeout(() => {
+      stalled = true;
+      loadingToast.textContent = `Still working… First download can take several minutes. If nothing changes soon, your browser may not fully support WebGPU for this model.`;
+    }, 45000);
 
     try {
       await webllmEngine.loadModel(this.currentModel.id, (progress: any) => {
         const p = typeof progress === 'number' ? progress : progress?.progress ?? 0;
-        loadingToast.textContent = `Loading ${this.currentModel!.name}: ${Math.round(p * 100)}%`;
+        const stage = progress?.stage as string;
+        const rawMsg = progress?.message as string | undefined;
+        const stageLabel: Record<string, string> = {
+          downloading: 'Downloading', compiling: 'Compiling shaders', loading: 'Loading into memory',
+          ready: 'Ready', error: 'Error',
+        };
+        if (p < 100 && !stalled) {
+          const label = stageLabel[stage] ?? 'Loading';
+          loadingToast.textContent = rawMsg && rawMsg.length < 90
+            ? `${this.currentModel!.name} — ${rawMsg}`
+            : `${this.currentModel!.name} — ${label} ${Math.round(p * 100)}%`;
+        }
       });
+      clearTimeout(stallTimer);
       loadingToast.remove();
       this.showToast(`${this.currentModel.name} ready`, 'success');
     } catch (error) {
+      clearTimeout(stallTimer);
       loadingToast.remove();
       console.error('[ChatPage] Model load failed:', error);
       // Surface the real reason (e.g. unsupported WebGPU) instead of a generic message
