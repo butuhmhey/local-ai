@@ -131,7 +131,12 @@ function initializePages(): AppState['pages'] {
 async function renderPage(page: keyof AppState['pages'], params?: Record<string, string>): Promise<void> {
   const pageInstance = app.pages[page];
   routeOutlet.innerHTML = '';
-  routeOutlet.appendChild(pageInstance.getElement());
+  const el = pageInstance.getElement();
+  routeOutlet.appendChild(el);
+
+  // Pages use `.page { display:none }` / `.page.active { display:flex }`.
+  // Landing page uses its own `.landing` class, but still needs to be visible.
+  el.classList.add('active');
 
   // Call page's onShow if it exists
   if (typeof pageInstance.onShow === 'function') {
@@ -178,6 +183,12 @@ async function navigate(route: Route, params?: Record<string, string>): Promise<
   // their full viewport — like the landing page — render clean, edge to edge.
   const appEl = document.getElementById('app');
   if (appEl) appEl.classList.toggle('route-home', route === 'home');
+
+  // The landing page uses min-height:100vh, which requires the outlet to
+  // allow scroll/overflow. Other pages manage their own scrolling.
+  if (routeOutlet) {
+    routeOutlet.style.overflow = route === 'home' ? 'visible' : 'hidden';
+  }
 
   // Render the page
   app.currentRoute = route;
