@@ -338,8 +338,12 @@ export class ChatPage {
     // Fail fast with a clear message if there's no WebGPU at all
     const gpu = await WebLLMEngine.getGPUInfo();
     if (!gpu.supported) {
-      this.showToast('WebGPU is not supported in this browser — models can’t run here. Use Safari/Chrome with WebGPU support.', 'error');
-      return false;
+      const reason = gpu.error && gpu.error !== 'WebGPU not supported in this browser'
+        ? gpu.error
+        : 'WebGPU is not available in this browser';
+      throw new Error(
+        `${reason}. Models run fully in your browser via WebGPU, so they can’t be downloaded or run here. Open Ember in a desktop browser with WebGPU enabled — Chrome or Edge on Windows/macOS.`
+      );
     }
     try {
       await webllmEngine.loadModel(model.id, onProgress);
@@ -347,8 +351,10 @@ export class ChatPage {
       return true;
     } catch (error) {
       console.error('[ChatPage] Model download failed:', error);
-      this.showToast(error instanceof Error ? error.message : `Failed to download ${model.name}`, 'error');
-      return false;
+      const msg = error instanceof Error && error.message
+        ? error.message
+        : `Failed to download ${model.name}. Check your connection and try again.`;
+      throw new Error(msg);
     }
   }
 

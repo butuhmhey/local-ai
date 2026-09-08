@@ -125,10 +125,13 @@ export function requestModelDownload(
     }
 
     function renderProgress(p: ModelLoadProgress): void {
-      const progressNum = p == null ? 0 : typeof p === 'number' ? p : p.progress ?? 0;
+      const raw = p == null ? 0 : typeof p === 'number' ? p : p.progress ?? 0;
+      // loadModel reports 0–100; tolerate a 0–1 fraction too so the bar never
+      // jumps to 100% on the first tick.
+      const progressNum = raw <= 1 ? raw * 100 : raw;
       const stage = (p as any)?.stage as string | undefined;
       const msg = (p as any)?.message as string | undefined;
-      const pct = Math.min(100, Math.max(0, Math.round(progressNum * 100)));
+      const pct = Math.min(100, Math.max(0, Math.round(progressNum)));
       const label = (stage && STAGE_LABEL[stage]) || 'Downloading';
 
       fill.style.width = `${pct}%`;
@@ -161,10 +164,12 @@ export function requestModelDownload(
             throw new Error('download returned false');
           }
         })
-        .catch(() => {
+        .catch((error) => {
           running = false;
           stageEl.textContent = 'Download failed';
-          statusEl.textContent = 'Could not download this model right now. Check your connection and try again.';
+          statusEl.textContent = error instanceof Error && error.message
+            ? (error.message.length > 150 ? `${error.message.slice(0, 147)}…` : error.message)
+            : 'Could not download this model right now. Check your connection and try again.';
           setButtons('failed');
         });
     }
