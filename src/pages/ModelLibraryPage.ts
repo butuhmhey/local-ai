@@ -276,9 +276,13 @@ export class ModelLibraryPage {
 
     try {
       await webllmEngine.loadModel(model.id, (progress) => {
-        const p = typeof progress === 'number' ? progress : progress?.progress ?? 0;
-        progressFill.style.width = `${p * 100}%`;
-        progressText.textContent = `${Math.round(p * 100)}%`;
+        const raw = typeof progress === 'number' ? progress : progress?.progress ?? 0;
+        // loadModel reports 0–100; tolerate a 0–1 fraction so the bar never
+        // jumps to 100% on the first tick.
+        const p = raw <= 1 ? raw * 100 : raw;
+        const clamped = Math.min(100, Math.max(0, Math.round(p)));
+        progressFill.style.width = `${clamped}%`;
+        progressText.textContent = `${clamped}%`;
         if (onProgress) onProgress(progress as ModelLoadProgress);
       });
 
@@ -295,7 +299,12 @@ export class ModelLibraryPage {
       return true;
     } catch (error) {
       console.error('[ModelLibraryPage] Download failed:', error);
-      this.showToast(`Failed to download ${model.name}`, 'error');
+      // Surface the real reason (e.g. WebGPU unavailable) instead of a generic
+      // "failed to download" that hides why nothing happened.
+      const reason = error instanceof Error && error.message
+        ? error.message
+        : `Failed to download ${model.name}. Check your connection and try again.`;
+      this.showToast(reason, 'error');
       progressEl.classList.add('hidden');
       if (downloadBtn) downloadBtn.disabled = false;
       return false;

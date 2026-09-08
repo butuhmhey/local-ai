@@ -326,8 +326,8 @@ export class ModelSelector {
 
   private createModelItem(model: ModelInfo): HTMLElement {
     const isSelected = model.id === this.options.selectedModelId;
-    // Check if model is downloaded via storage engine
-    const isDownloaded = false; // Will be updated async
+    // Check if model is downloaded via storage engine (refreshed async)
+    const isDownloaded = this.downloadedIds.has(model.id);
 
     const item = createElement('div', {
       class: `model-item ${isSelected ? 'selected' : ''} ${isDownloaded ? 'downloaded' : ''}`,

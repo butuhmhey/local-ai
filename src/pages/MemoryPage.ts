@@ -141,8 +141,15 @@ export class MemoryPage {
       // Get memory stats
       const stats = await memoryEngine.getMemoryStats(chatId);
 
-      // Get memory data
-      const memory = chat.memory || { level0: [], level1: [], level2: [], facts: [] };
+      // Memory lives in its own stores (memories/facts), not on the chat
+      // object — chat.memory is never populated, so read the real data.
+      const [level0, level1, level2, facts] = await Promise.all([
+        storageEngine.getMemoriesByLevel(chatId, 0),
+        storageEngine.getMemoriesByLevel(chatId, 1),
+        storageEngine.getMemoriesByLevel(chatId, 2),
+        storageEngine.getFacts(chatId),
+      ]);
+      const memory = { level0, level1, level2, facts };
 
       // Render stats
       this.renderStats(stats, chat);
@@ -271,32 +278,40 @@ export class MemoryPage {
 
     try {
       const chat = await storageEngine.getChat(this.currentChatId);
-      if (!chat || !chat.memory) throw new Error('No memory data');
+      if (!chat) throw new Error('Chat not found');
+
+      // Memory lives in its own stores, not on the chat object.
+      const [level1, level2, facts] = await Promise.all([
+        storageEngine.getMemoriesByLevel(this.currentChatId, 1),
+        storageEngine.getMemoriesByLevel(this.currentChatId, 2),
+        storageEngine.getFacts(this.currentChatId),
+      ]);
+      const memory = { level1, level2, facts };
 
       let content = `# Memory Export: ${chat.title}\n\n`;
       content += `Exported: ${new Date().toLocaleString()}\n`;
       content += `Messages: ${(await storageEngine.getMessages(this.currentChatId!)).length}\n\n`;
 
       // Facts
-      if (chat.memory.facts.length > 0) {
-        content += `## Extracted Facts (${chat.memory.facts.length})\n\n`;
-        for (const fact of chat.memory.facts) {
+      if (memory.facts.length > 0) {
+        content += `## Extracted Facts (${memory.facts.length})\n\n`;
+        for (const fact of memory.facts) {
           content += `- **${escapeHtml(fact.entity)}** ${escapeHtml(fact.relation)} **${escapeHtml(fact.value)}** (${Math.round(fact.confidence * 100)}%)\n`;
         }
         content += `\n`;
       }
 
       // Summaries
-      if (chat.memory.level1.length > 0) {
-        content += `## Summaries L1 (${chat.memory.level1.length})\n\n`;
-        for (const s of chat.memory.level1) {
+      if (memory.level1.length > 0) {
+        content += `## Summaries L1 (${memory.level1.length})\n\n`;
+        for (const s of memory.level1) {
           content += `### ${s.id.slice(0, 8)} (${formatNumber(s.tokens)} tokens)\n${escapeHtml(s.content)}\n\n`;
         }
       }
 
-      if (chat.memory.level2.length > 0) {
-        content += `## Meta-Summaries L2 (${chat.memory.level2.length})\n\n`;
-        for (const s of chat.memory.level2) {
+      if (memory.level2.length > 0) {
+        content += `## Meta-Summaries L2 (${memory.level2.length})\n\n`;
+        for (const s of memory.level2) {
           content += `### ${s.id.slice(0, 8)} (${formatNumber(s.tokens)} tokens)\n${escapeHtml(s.content)}\n\n`;
         }
       }
@@ -329,9 +344,17 @@ export class MemoryPage {
 
       this.showToast('Compacting...', 'info');
 
-      await memoryEngine.maybeCompact(messages, this.currentChatId);
+      const result = await memoryEngine.maybeCompact(messages, this.currentChatId);
 
-      this.showToast('Compaction complete', 'success');
+      // maybeCompact returns success:false for "below threshold / nothing to
+      // compact" too — only call it a failure when it genuinely errored.
+      if (result.success) {
+        this.showToast('Compaction complete', 'success');
+      } else if ((result.message ?? '').startsWith('Compaction failed')) {
+        this.showToast('Compaction failed', 'error');
+      } else {
+        this.showToast('No compaction needed', 'info');
+      }
       await this.loadMemory(this.currentChatId);
     } catch (error) {
       console.error('[MemoryPage] Compact failed:', error);

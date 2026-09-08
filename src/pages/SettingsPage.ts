@@ -382,11 +382,21 @@ export class SettingsPage {
 
     try {
       const chats = await storageEngine.getAllChats();
+      let failures = 0;
       for (const chat of chats) {
         const messages = await storageEngine.getMessages(chat.id);
-        await memoryEngine.maybeCompact(messages, chat.id);
+        const result = await memoryEngine.maybeCompact(messages, chat.id);
+        // maybeCompact returns success:false for "below threshold / nothing to
+        // compact" too, so only count genuine failures from the catch path.
+        if (!result.success && (result.message ?? '').startsWith('Compaction failed')) {
+          failures++;
+        }
       }
-      this.showToast('All conversations compacted', 'success');
+      if (failures > 0) {
+        this.showToast(`${failures} conversation(s) failed to compact`, 'error');
+      } else {
+        this.showToast('All conversations compacted', 'success');
+      }
     } catch (error) {
       console.error('[SettingsPage] Force compact failed:', error);
       this.showToast('Compaction failed', 'error');

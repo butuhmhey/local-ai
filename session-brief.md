@@ -93,6 +93,7 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-08 | **DEEP AUDIT FIX (same bug classes)**: Hunted the whole codebase for the same failure-UX/unit bugs. Fixed: (1) ModelLibrary download progress double-scale (×100 again) + generic error → now surfaces WebGPU reason; (2) SettingsPage forceCompactAll always claimed "all compacted" despite failures → now counts real failures; (3) MemoryPage forceCompact always claimed success → now reflects result; (4) **MemoryPage memory view + Export always empty/failed** — read chat.memory which storage never populates → now fetches real memories/facts stores; (5) ModelSelector dropdown Download/Delete buttons never reflected downloaded state (isDownloaded hardcoded false) | src/pages/ModelLibraryPage.ts, src/pages/SettingsPage.ts, src/pages/MemoryPage.ts, src/components/ModelSelector.ts |
 | 2026-09-08 | **DOWNLOAD-BUTTON FIX**: User reported "download model button dont work". Playwright proved the button WAS wired (click→progress→fail). Real cause: WebGPU unavailable → modal showed misleading generic "check your connection". Now the modal surfaces the ACTUAL reason (e.g. "No WebGPU adapter found... Open Ember in a desktop browser with WebGPU") and is actionable. Also fixed progress bar double-scaling (loadModel sends 0-100, renderProgress ×100 again → jumped to 100%) | src/components/DownloadPrompt.ts, src/pages/ChatPage.ts |
 | 2026-09-08 | **SCRIPT CLEANUP**: Removed debug/verify2 scripts, added `--all` flag to shot.mjs for full-page capture, updated verify.mjs | shot.mjs, verify.mjs |
 | 2026-09-08 | **VISUAL VERIFIED**: Playwright screenshots confirmed premium look across desktop/mobile, light/dark. Mobile action row hidden, input wrapper softened, title orphan fixed | src/styles/components.css |
@@ -181,7 +182,8 @@
 24. ✅ **Visual overhaul verified** — Playwright screenshots confirmed premium look across desktop/mobile, light/dark. Mobile action row hidden, input wrapper softened, title orphan fixed
 25. ✅ **Script cleanup** — Removed debug/verify2 scripts, added `--all` flag to shot.mjs, updated verify.mjs to capture all pages
 26. ✅ **Download-button fix** — Button was wired correctly (verified via Playwright); failure UX was the real problem: no-WebGPU showed a misleading generic error. Now shows the actual reason + fix, and progress bar no longer jumps to 100%
-27. ⏳ **Await user feedback** — download button reported broken; root cause surfaced (likely no WebGPU on their browser). May need further refinement
+27. ✅ **Deep audit of same bug classes** — fixed 5 more: ModelLibrary progress double-scale + WebGPU reason, SettingsPage & MemoryPage false "compaction success", MemoryPage memory view/export reading never-populated chat.memory, ModelSelector downloaded-state buttons
+28. ⏳ **Await user feedback** — download button reported broken; root cause surfaced (likely no WebGPU on their browser). May need further refinement
 
 ---
 
