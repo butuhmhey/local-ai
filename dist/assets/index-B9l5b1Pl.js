@@ -376,7 +376,7 @@ ${w(r.content)}
 
       <div class="sidebar-footer" style="padding: var(--spacing-4); border-top: 1px solid var(--border-color);">
         <div class="flex items-center gap-3">
-          <div class="avatar avatar-sm" style="background: linear-gradient(135deg, var(--accent-primary), #B45309);" aria-hidden="true">
+          <div class="avatar avatar-sm avatar-brand" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
             </svg>

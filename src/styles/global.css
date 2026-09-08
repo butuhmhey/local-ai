@@ -216,8 +216,8 @@ input::placeholder, textarea::placeholder {
   50% { opacity: 0.5; }
 }
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(217, 119, 6, 0.15); }
-  50% { box-shadow: 0 0 40px rgba(217, 119, 6, 0.25); }
+  0%, 100% { box-shadow: 0 0 20px color-mix(in srgb, var(--accent-primary) 15%, transparent); }
+  50% { box-shadow: 0 0 40px color-mix(in srgb, var(--accent-primary) 25%, transparent); }
 }
 @keyframes float {
   0%, 100% { transform: translateY(0); }

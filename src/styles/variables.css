@@ -52,6 +52,14 @@
   --shadow-glow: 0 0 0 3px rgba(217, 119, 6, 0.15), 0 4px 16px rgba(217, 119, 6, 0.12);
   --shadow-glow-sm: 0 0 0 2px rgba(217, 119, 6, 0.12);
 
+  /* Gradients — disciplined warm tones, theme-aware */
+  --gradient-brand: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-hover));
+  --gradient-warm: linear-gradient(90deg, var(--accent-primary), var(--accent-warning));
+  --gradient-text: linear-gradient(120deg, var(--accent-primary), var(--accent-warning));
+
+  /* Overlay backdrop */
+  --overlay: rgba(26, 22, 20, 0.4);
+
   /* Radii — Rounded & Friendly */
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -80,6 +88,7 @@
   --spacing-4: 1rem;
   --spacing-5: 1.25rem;
   --spacing-6: 1.5rem;
+  --spacing-7: 1.75rem;
   --spacing-8: 2rem;
   --spacing-10: 2.5rem;
   --spacing-12: 3rem;
@@ -111,7 +120,7 @@
   /* Model category colors */
   --cat-general: #D97706;
   --cat-coding: #0D9488;
-  --cat-reasoning: #9333EA;
+  --cat-reasoning: #C2410C;
   --cat-uncensored: #E11D48;
 }
 
@@ -169,7 +178,7 @@
 
   --cat-general: #FBBF24;
   --cat-coding: #2DD4BF;
-  --cat-reasoning: #C084FC;
+  --cat-reasoning: #FB923C;
   --cat-uncensored: #FB7185;
 }
 
