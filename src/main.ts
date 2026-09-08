@@ -148,14 +148,32 @@ async function renderPage(page: keyof AppState['pages'], params?: Record<string,
   }
 }
 
+/** Build the hash string for a route + params */
+function buildHash(route: Route, params?: Record<string, string>): string {
+  return params
+    ? `#${route}/${Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&')}`
+    : `#${route}`;
+}
+
 /**
- * Handle route change
+ * Handle route change. Setting `window.location.hash` fires `hashchange`,
+ * which is where the page is actually rendered (see setupEventListeners). We
+ * must NOT also render here, or every navigation renders the page twice —
+ * previously each nav ran onShow 2–3× (double IndexedDB reads, double DOM
+ * rebuild). Only render directly when the hash is already the target (so a
+ * back/forward or a re-click on the current route still works).
  */
 async function navigate(route: Route, params?: Record<string, string>): Promise<void> {
-  // Update URL hash
-  const hash = params ? `#${route}/${Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&')}` : `#${route}`;
-  window.location.hash = hash;
+  const hash = buildHash(route, params);
+  if (window.location.hash !== hash) {
+    window.location.hash = hash;
+    return; // hashchange will render
+  }
+  await renderRoute(route, params);
+}
 
+/** Render the target route into the outlet (single source of truth) */
+async function renderRoute(route: Route, params?: Record<string, string>): Promise<void> {
   // Update active nav link
   navLinks.forEach(link => {
     const linkRoute = link.dataset.route as Route;
@@ -223,10 +241,11 @@ function parseHash(): { route: Route; params: Record<string, string> } {
  * Set up event listeners
  */
 function setupEventListeners(): void {
-  // Hash change navigation
+  // Hash change navigation — the single render point. (navigate() only sets
+  // the hash; never call navigate() here or a single nav would render twice.)
   window.addEventListener('hashchange', () => {
     const { route, params } = parseHash();
-    navigate(route, params);
+    renderRoute(route, params);
   });
 
   // Sidebar toggle (desktop)
@@ -246,11 +265,13 @@ function setupEventListeners(): void {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
-    // Ctrl/Cmd + K: Focus search (if on models page)
+    // Ctrl/Cmd + K: Open the model picker + focus search. Focusing the hidden
+    // search input directly does nothing (it's inside the closed dropdown), so
+    // trigger the selector button, whose open() both reveals and focuses it.
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
-      const searchInput = document.querySelector('.model-search input') as HTMLInputElement;
-      searchInput?.focus();
+      const btn = document.querySelector('.model-selector-btn') as HTMLButtonElement;
+      btn?.click();
     }
     // Escape: Close modals, dropdowns, mobile sidebar
     if (e.key === 'Escape') {

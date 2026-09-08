@@ -260,10 +260,12 @@ export class MessageBubble {
     // Escape HTML first
     let html = escapeHtml(text);
 
-    // Code blocks (```lang\ncode\n```)
+    // Code blocks (```lang\ncode\n```). `html` is already HTML-escaped above,
+    // so the captured lang/code must NOT be escaped again — re-escaping turned
+    // < > & inside code blocks into literal &lt; &amp; etc.
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (_match, lang, code) => {
       const language = lang || 'text';
-      return `<pre><code class="language-${escapeHtml(language)}">${escapeHtml(code.trim())}</code></pre>`;
+      return `<pre><code class="language-${language}">${code.trim()}</code></pre>`;
     });
 
     // Inline code (`code`)
