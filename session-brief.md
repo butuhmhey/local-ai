@@ -1,7 +1,7 @@
 # Session Brief — Ember (formerly Local AI Chat)
 
-**Last Updated:** 2026-09-07 (iOS blank-screen fix + Chat Functionality Verified)  
-**Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ COMPLETE + Chat Functionality Verified ✅  
+**Last Updated:** 2026-09-08 (Download-first model gate complete)  
+**Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ + Chat Verified ✅ + Download-First Gate ✅  
 **GitHub:** butuhmhey/local-ai  
 **User:** Kasper Kal (kasper.kal@proton.me)
 
@@ -41,6 +41,10 @@
 - **PWA**: Service Worker generated and verified (`dist/sw.js`)
 - **Build**: `npm run build` passes, outputs to `dist/`
 - **Deploy**: Render config created (`render.yaml`)
+
+### What's Done (Polish + Download Gate ✅)
+- **Download-first gate** — chat model selector asks the user to confirm + download a model BEFORE selecting it (confirmation modal with name, description, spec chips, size; live progress). No silent multi-GB downloads. Wired via `onDownload` → `requestModelDownload()` in `DownloadPrompt.ts`
+- **Verified** via Playwright on desktop (1440×900) + mobile (390×844): modal appears on undownloaded model click
 
 ### File Structure Status
 ```
@@ -88,6 +92,7 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-07 | **FEATURE**: Download-first model selection — picking an undownloaded model in chat now shows a confirmation modal (name, description, note, spec chips, "Download X MB" button) BEFORE selection, with live progress. No silent multi-GB downloads. Wired `onDownload` through ModelSelector → createCompactModelSelector → ChatPage. Verified via Playwright on desktop + mobile | src/components/ModelSelector.ts, src/pages/ChatPage.ts |
 | 2026-09-07 | **FIX**: Blank cream screen on iOS (no WebGPU) — WebLLM crashed at import time. Now lazy-loaded via dynamic import (6MB deferred), pinned so UI never blocks on it; added no-WebGPU fail-fast with clear toast + inline crash catcher in index.html | src/services/webllmEngine.ts, src/pages/ChatPage.ts, index.html |
 | 2026-09-07 | **FIX + TEST**: Chat flow functionally verified via Playwright (model select ✓, type ✓, send ✓, error handling ✓). Fixed unhandled promise rejection — `loadCurrentModel()` threw before try block on WebGPU failure | src/pages/ChatPage.ts |
 | 2026-09-07 | **FIX**: vite-plugin-pwa inline manifest still had old branding (src/public conflict) — synced to Ember (name, short_name, amber theme, cream background) | vite.config.ts |
@@ -163,7 +168,8 @@
 18. ✅ **UI polish** — Welcome state, settings card styling, header fixes, icon assets
 19. ✅ **Ember rebrand** — Full visual overhaul, warm minimal design, dark mode verified
 20. ✅ **Chat functional test** — Verified model select / typing / send / error handling via Playwright; fixed unhandled rejection on model-load failure
-21. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
+21. ✅ **Download-first model gate** — Chat model selector asks to download a model BEFORE selecting it (confirm modal + live progress); no silent multi-GB downloads
+22. 🔲 **Deploy to Render** — Connect repo on render.com, deploy
 
 ---
 
