@@ -130,6 +130,10 @@ function initializePages(): AppState['pages'] {
  */
 async function renderPage(page: keyof AppState['pages'], params?: Record<string, string>): Promise<void> {
   const pageInstance = app.pages[page];
+  if (!pageInstance) {
+    console.warn(`[Ember] Unknown page "${page}", redirecting to chat`);
+    return navigate('chat');
+  }
   routeOutlet.innerHTML = '';
   const el = pageInstance.getElement();
   routeOutlet.appendChild(el);
@@ -199,9 +203,10 @@ async function navigate(route: Route, params?: Record<string, string>): Promise<
  * Parse hash into route + params
  */
 function parseHash(): { route: Route; params: Record<string, string> } {
-  const hash = window.location.hash.slice(1) || 'home';
+  // Strip leading slash (/#/chat → /chat → chat) and default to 'home'
+  const hash = window.location.hash.slice(1).replace(/^\/+/, '') || 'home';
   const [routePart, ...paramParts] = hash.split('/');
-  const route = routePart as Route;
+  const route = (routePart || 'home') as Route;
 
   const params: Record<string, string> = {};
   if (paramParts.length > 0) {
