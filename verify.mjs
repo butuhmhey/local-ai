@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+const errors = [];
+p.on('console', msg => { if (msg.type() === 'error') errors.push(msg.text()); });
+p.on('pageerror', err => errors.push('PAGE_ERR: ' + err.message));
+await p.goto('http://localhost:5173/#/chat', { waitUntil: 'networkidle' });
+await p.waitForTimeout(2000);
+await p.screenshot({ path: '/tmp/verify-mobile.png' });
+console.log('ERRORS:', errors.length ? errors.join('\n') : 'NONE');
+console.log('URL:', p.url());
+await b.close();
