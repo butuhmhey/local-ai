@@ -58,12 +58,12 @@
   /* Overlay backdrop */
   --overlay: rgba(26, 22, 20, 0.4);
 
-  /* Radii — Rounded & Friendly */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 28px;
+  /* Radii — Structured, not bubbly */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 14px;
   --radius-full: 9999px;
 
   /* Typography */

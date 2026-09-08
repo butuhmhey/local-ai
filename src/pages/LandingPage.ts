@@ -23,7 +23,6 @@ export class LandingPage {
     const root = document.createElement('div');
     root.className = 'landing';
     root.innerHTML = `
-      <div class="landing-glow" aria-hidden="true"></div>
       <header class="landing-nav">
         <div class="landing-brand">
           <div class="sidebar-logo-icon" aria-hidden="true">
@@ -43,8 +42,9 @@ export class LandingPage {
               <path d="M12 2c1 3 2.5 3.5 3.5 4.5A5 5 0 0 1 17 10a5 5 0 1 1-10 0c0-1 .5-2.5 1.5-3.5C9.5 5.5 11 5 12 2z"></path>
             </svg>
           </div>
-          <h1 class="landing-title">Your private AI, <em>burning in your browser.</em></h1>
-          <p class="landing-subtitle">Ember runs large language models directly on your device — nothing leaves, everything remembers, and it costs €0 forever.</p>
+          <span class="landing-eyebrow">100% local · €0 forever</span>
+          <h1 class="landing-title">Your private AI, <em>running in your browser.</em></h1>
+          <p class="landing-subtitle">Ember runs large language models directly on your device — nothing leaves, everything remembers.</p>
           <button class="btn btn-primary btn-lg" data-landing-start>
             Start chatting
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>

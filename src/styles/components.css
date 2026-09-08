@@ -121,12 +121,11 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: box-shadow var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
 }
 .card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   border-color: color-mix(in srgb, var(--accent-primary) 25%, var(--border-color));
 }
 .card-header {
@@ -483,7 +482,6 @@
   top: 0;
   z-index: var(--z-dropdown);
   transition: width var(--transition-base);
-  box-shadow: 1px 0 8px color-mix(in srgb, var(--text-primary) 3%, transparent);
 }
 .sidebar.collapsed { width: var(--sidebar-collapsed); }
 
@@ -903,17 +901,18 @@
 }
 .welcome-title {
   font-size: clamp(1.5rem, 3vw, var(--font-size-3xl));
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
   margin-bottom: var(--spacing-2);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
 }
 .welcome-subtitle {
   font-size: var(--font-size-base);
   color: var(--text-secondary);
   max-width: 420px;
   margin-bottom: var(--spacing-8);
-  line-height: 1.7;
+  line-height: 1.6;
 }
 .welcome-features {
   display: grid;
@@ -926,18 +925,19 @@
 .welcome-feature {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-5) var(--spacing-4);
+  align-items: flex-start;
+  text-align: left;
+  gap: var(--spacing-3);
+  padding: var(--spacing-5);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
+  border-top: 2px solid color-mix(in srgb, var(--accent-primary) 50%, var(--border-color));
   border-radius: var(--radius-lg);
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-xs);
+  transition: border-color var(--transition-base), transform var(--transition-base);
 }
 .welcome-feature:hover {
   border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-color));
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 .welcome-feature-icon {
   width: 40px;
@@ -949,18 +949,19 @@
   font-size: 20px;
   background: var(--accent-primary-soft);
   color: var(--accent-primary);
+  flex-shrink: 0;
 }
 .welcome-feature-title {
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
-  opacity: 1;
+  letter-spacing: -0.01em;
 }
 .welcome-feature-desc {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   line-height: 1.5;
-  opacity: 1;
+  min-height: 2.4em;
 }
 .welcome-hint {
   font-size: var(--font-size-sm);
@@ -996,7 +997,6 @@
   max-height: 200px;
   line-height: 1.5;
   transition: border-color var(--transition-base), box-shadow var(--transition-base);
-  box-shadow: var(--shadow-xs);
 }
 .chat-input:focus {
   border-color: var(--accent-primary);
@@ -1247,7 +1247,8 @@
 }
 .page-header h1 {
   font-size: var(--font-size-2xl);
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   color: var(--text-primary);
   margin-bottom: var(--spacing-1);
 }
@@ -1858,10 +1859,11 @@ body > .toast {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: var(--spacing-5);
+  gap: var(--spacing-4);
   padding: var(--spacing-10) var(--spacing-5);
   max-width: 640px;
 }
+.landing-hero .landing-title { margin-bottom: var(--spacing-1); }
 .landing-hero .welcome-icon {
   width: 96px;
   height: 96px;
@@ -1870,12 +1872,27 @@ body > .toast {
   box-shadow: var(--shadow-lg);
   margin-bottom: var(--spacing-2);
 }
+.landing-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  background: var(--accent-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 25%, transparent);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-1);
+}
 .landing-title {
   font-size: clamp(1.8rem, 5vw, 3rem);
-  font-weight: 700;
-  line-height: 1.08;
+  font-weight: 800;
+  line-height: 1.06;
   color: var(--text-primary);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   margin: 0;
 }
 .landing-title em {
@@ -1908,24 +1925,24 @@ body > .toast {
 .landing-feature {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
+  border-top: 2px solid color-mix(in srgb, var(--accent-primary) 50%, var(--border-color));
+  border-radius: var(--radius-lg);
   padding: var(--spacing-6);
   text-align: left;
-  transition: box-shadow var(--transition-base), border-color var(--transition-base);
-  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-base), transform var(--transition-base);
 }
 .landing-feature:hover {
   border-color: color-mix(in srgb, var(--accent-primary) 45%, var(--border-color));
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 .landing-feature .welcome-feature-icon {
   background: var(--accent-primary-soft);
   width: 44px;
   height: 44px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
-.landing-feature h3 { margin: var(--spacing-3) 0 var(--spacing-1); font-size: 1.05rem; color: var(--text-primary); }
-.landing-feature p { margin: 0; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; }
+.landing-feature h3 { margin: var(--spacing-3) 0 var(--spacing-1); font-size: 1.05rem; font-weight: 700; letter-spacing: -0.015em; color: var(--text-primary); }
+.landing-feature p { margin: 0; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.55; }
 .landing-footer {
   text-align: center;
   padding: var(--spacing-5);
