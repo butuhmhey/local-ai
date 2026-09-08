@@ -3,9 +3,9 @@
  * Supports user/assistant/system roles, streaming, copy, regenerate, edit
  */
 
-import { createElement, formatTime, escapeHtml } from '../utils/helpers.js';
+import { createElement, formatTime, escapeHtml, truncate } from '../utils/helpers.js';
 import { iconEl } from '../utils/icons.js';
-import type { Message } from '../types/index.js';
+import type { Message, MessageEditVersion } from '../types/index.js';
 
 export interface MessageBubbleOptions {
   message: Message;
@@ -24,6 +24,7 @@ export class MessageBubble {
   private streamingContent = '';
   private isEditing = false;
   private originalContent = '';
+  private versionBadge: HTMLElement | null = null;
 
   constructor(options: MessageBubbleOptions) {
     this.options = {
@@ -39,6 +40,7 @@ export class MessageBubble {
     }
     this.contentElement = contentEl;
     this.updateContent(this.options.message.content);
+    this.refreshVersionBadge();
   }
 
   getElement(): HTMLElement {
@@ -86,14 +88,33 @@ export class MessageBubble {
 
     const newContent = textarea.value;
     this.isEditing = false;
-    this.options.message.content = newContent;
-    this.originalContent = newContent;
-    this.updateContent(newContent);
-    this.updateActions();
+    this.commitContent(newContent);
 
     if (this.options.onEdit) {
       this.options.onEdit(this.options.message.id, newContent);
     }
+  }
+
+  /**
+   * Apply new content to the message, recording the previous version into
+   * editHistory. Each save/restore bumps editVersion (v1 → v2 → …).
+   */
+  private commitContent(newContent: string): void {
+    const prev = this.options.message.content;
+
+    if (prev !== newContent) {
+      const history = this.options.message.editHistory || [];
+      const currentVersion = this.options.message.editVersion ?? 1;
+      history.push({ version: currentVersion, content: prev, timestamp: Date.now() });
+      this.options.message.editHistory = history;
+      this.options.message.editVersion = currentVersion + 1;
+    }
+
+    this.options.message.content = newContent;
+    this.originalContent = newContent;
+    this.updateContent(newContent);
+    this.updateActions();
+    this.refreshVersionBadge();
   }
 
   /** Set loading state */
@@ -144,7 +165,19 @@ export class MessageBubble {
       class: 'message-time',
       children: [formatTime(this.options.message.timestamp)],
     });
-    header.append(roleLabel, timeLabel);
+
+    // Version badge (v1/v2…) — hidden until the message has been edited
+    this.versionBadge = createElement('button', {
+      class: 'version-badge',
+      type: 'button',
+      title: 'View message versions',
+      'aria-label': 'View message versions',
+      style: 'display: none;',
+      children: [iconEl('history', 12), createElement('span', { class: 'version-badge-label' })],
+      onClick: () => this.toggleVersionDropdown(),
+    });
+
+    header.append(roleLabel, this.versionBadge, timeLabel);
 
     // Content
     this.contentElement = createElement('div', { class: 'message-content' });
@@ -247,6 +280,73 @@ export class MessageBubble {
     this.contentElement.appendChild(textarea);
     textarea.focus();
     this.updateActions();
+  }
+
+  /** Show/hide + label the version badge based on edit history */
+  private refreshVersionBadge(): void {
+    if (!this.versionBadge) return;
+    const history = this.options.message.editHistory || [];
+    if (history.length === 0) {
+      this.versionBadge.style.display = 'none';
+      return;
+    }
+    this.versionBadge.style.display = 'inline-flex';
+    const current = this.options.message.editVersion ?? history.length + 1;
+    const label = this.versionBadge.querySelector('.version-badge-label');
+    if (label) label.textContent = `v${current}`;
+  }
+
+  /** Open/close the version history dropdown */
+  private toggleVersionDropdown(): void {
+    const existing = this.element.querySelector('.version-dropdown');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    const history = this.options.message.editHistory || [];
+    if (history.length === 0) return;
+
+    const dropdown = createElement('div', { class: 'version-dropdown' });
+    // Newest first
+    const sorted = [...history].sort((a, b) => b.version - a.version);
+
+    for (const v of sorted) {
+      const row = createElement('div', { class: 'version-row' });
+      const info = createElement('div', { class: 'version-info' });
+      info.append(
+        createElement('span', { class: 'version-num', children: [`v${v.version}`] }),
+        createElement('span', { class: 'version-preview', children: [truncate(v.content, 70)] })
+      );
+      const restore = createElement('button', {
+        class: 'version-restore',
+        type: 'button',
+        children: ['Restore'],
+        onClick: () => this.restoreVersion(v),
+      });
+      row.append(info, restore);
+      dropdown.appendChild(row);
+    }
+
+    this.element.appendChild(dropdown);
+
+    // Close on outside click (one-time)
+    const onDocClick = (e: MouseEvent) => {
+      if (!dropdown.contains(e.target as Node)) {
+        dropdown.remove();
+        document.removeEventListener('click', onDocClick);
+      }
+    };
+    document.addEventListener('click', onDocClick);
+  }
+
+  /** Restore a previous version — records current content as a new version too */
+  private restoreVersion(v: MessageEditVersion): void {
+    this.element.querySelector('.version-dropdown')?.remove();
+    this.commitContent(v.content);
+    if (this.options.onEdit) {
+      this.options.onEdit(this.options.message.id, v.content);
+    }
   }
 
   private updateContent(content: string): void {

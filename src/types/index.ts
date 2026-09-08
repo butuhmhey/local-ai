@@ -8,6 +8,13 @@ export type MessageRole = 'user' | 'assistant' | 'system';
 /** Alias for ChatMessage */
 export type Message = ChatMessage;
 
+/** A previous version of an edited message (v1 = original, v2 = first edit, …) */
+export interface MessageEditVersion {
+  version: number;
+  content: string;
+  timestamp: number;
+}
+
 /** Chat message */
 export interface ChatMessage {
   id: string;
@@ -18,6 +25,10 @@ export interface ChatMessage {
   isCompacted?: boolean;
   parentSummaryId?: string;
   modelId?: string;
+  /** Previous versions of an edited message; absent for never-edited messages */
+  editHistory?: MessageEditVersion[];
+  /** Current version number (1 = original); editHistory.length + 1 when edited */
+  editVersion?: number;
 }
 
 /** Chat session */
@@ -161,6 +172,8 @@ export interface StoredMessage {
   isCompacted: boolean;
   parentSummaryId?: string;
   modelId?: string;
+  editHistory?: MessageEditVersion[];
+  editVersion?: number;
 }
 
 export interface StoredMemory {

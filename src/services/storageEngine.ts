@@ -305,6 +305,8 @@ export class StorageEngine {
       isCompacted: message.isCompacted ?? false,
       parentSummaryId: message.parentSummaryId,
       modelId: message.modelId,
+      editHistory: message.editHistory,
+      editVersion: message.editVersion,
     };
     await db.put('messages', newMsg);
     await this.incrementMessageCount(message.chatId);
@@ -870,6 +872,8 @@ export class StorageEngine {
       isCompacted: stored.isCompacted,
       parentSummaryId: stored.parentSummaryId,
       modelId: stored.modelId,
+      editHistory: stored.editHistory,
+      editVersion: stored.editVersion,
     };
   }
 

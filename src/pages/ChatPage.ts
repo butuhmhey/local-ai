@@ -27,6 +27,8 @@ export class ChatPage {
   private abortController: AbortController | null = null;
   private messageBubbles: Map<string, MessageBubble> = new Map();
   private pendingUserMessage: Message | null = null;
+  private currentInstructions = '';
+  private instructionsBtn!: HTMLButtonElement;
 
   constructor() {
     this.element = this.createElement();
@@ -75,6 +77,8 @@ export class ChatPage {
     this.clearMessages();
     this.updateChatTitle('New Chat');
     this.compactIndicator.setChatId(chatId);
+    this.currentInstructions = '';
+    this.updateInstructionsBadge();
   }
 
   /** Load chat by ID */
@@ -100,6 +104,10 @@ export class ChatPage {
 
       // Update title
       this.updateChatTitle(chat.title);
+
+      // Load per-chat custom instructions
+      this.currentInstructions = chat.settings?.systemPrompt || '';
+      this.updateInstructionsBadge();
 
       // Update compact indicator
       this.compactIndicator.setChatId(chatId);
@@ -137,6 +145,7 @@ export class ChatPage {
       await storageEngine.updateChat(this.currentChatId, {
         title,
         modelId: this.currentModel?.id || chat.modelId,
+        settings: { ...(chat.settings || {}), systemPrompt: this.currentInstructions.trim() || undefined },
       });
 
       // Save messages
@@ -194,6 +203,19 @@ export class ChatPage {
     this.inputArea.value = '';
     this.autoResizeTextarea();
 
+    await this.generateFromMessage(userMessage);
+  }
+
+  /**
+   * Stream an assistant response to the given user message, which must already
+   * be present in the bubble list. Persists the current messages first so the
+   * context window reflects any just-made edits and removed replies.
+   */
+  private async generateFromMessage(userMessage: Message): Promise<void> {
+    // Persist current messages so buildContextWindow sees edited content and
+    // not replies that were just removed (the AI "forgets" the old response).
+    await this.saveCurrentChat();
+
     // Create streaming assistant bubble
     const assistantId = generateId();
     const streamingBubble = createStreamingBubble(assistantId,
@@ -205,6 +227,7 @@ export class ChatPage {
 
     this.isStreaming = true;
     this.sendBtn.disabled = true;
+    this.sendBtn.classList.add('stopping');
     this.sendBtn.innerHTML = svgIcon('stop', 16) + '<span>Stop</span>';
     this.inputArea.disabled = true;
 
@@ -214,8 +237,20 @@ export class ChatPage {
       // Build context with memory
       const context = await memoryEngine.buildContextWindow(
         this.currentChatId!,
-        this.currentModel.contextWindow ?? 4096
+        this.currentModel!.contextWindow ?? 4096
       );
+
+      // Prepend per-chat custom instructions (the AI reads these every message)
+      if (this.currentInstructions.trim()) {
+        context.unshift({
+          id: 'system-instructions',
+          role: 'system',
+          content: this.currentInstructions.trim(),
+          timestamp: 0, // sorts to the front of the context
+          tokens: webllmEngine.estimateTokens(this.currentInstructions.trim()),
+          isCompacted: true,
+        });
+      }
 
       // Add current user message to context
       context.push(userMessage);
@@ -234,11 +269,7 @@ export class ChatPage {
 
       // Complete streaming
       streamingBubble.complete();
-      this.isStreaming = false;
-      this.sendBtn.disabled = false;
-      this.sendBtn.innerHTML = svgIcon('send', 16) + '<span>Send</span>';
-      this.inputArea.disabled = false;
-      this.inputArea.focus();
+      this.finishStreaming();
 
       // Save assistant message
       const assistantMessage: Message = {
@@ -263,15 +294,21 @@ export class ChatPage {
         streamingBubble.setError('Generation failed');
         this.showToast('Failed to generate response', 'error');
       }
-      this.isStreaming = false;
-      this.sendBtn.disabled = false;
-      this.sendBtn.innerHTML = svgIcon('send', 16) + '<span>Send</span>';
-      this.inputArea.disabled = false;
-      this.inputArea.focus();
+      this.finishStreaming();
     } finally {
       this.abortController = null;
       this.pendingUserMessage = null;
     }
+  }
+
+  /** Reset UI state after streaming finishes or is interrupted */
+  private finishStreaming(): void {
+    this.isStreaming = false;
+    this.sendBtn.disabled = false;
+    this.sendBtn.classList.remove('stopping');
+    this.sendBtn.innerHTML = svgIcon('send', 16) + '<span>Send</span>';
+    this.inputArea.disabled = false;
+    this.inputArea.focus();
   }
 
   /** Stop generation */
@@ -281,7 +318,7 @@ export class ChatPage {
     }
   }
 
-  /** Regenerate last assistant message */
+  /** Regenerate last assistant message (keeps the preceding user message in place) */
   async regenerateMessage(messageId: string): Promise<void> {
     // Find the user message before this assistant message
     const messages = Array.from(this.messageBubbles.values())
@@ -297,11 +334,10 @@ export class ChatPage {
       this.messageBubbles.delete(msg.id);
     }
 
-    // Re-send from the user message before
+    // Regenerate from the user message before, in place (no duplicate bubble)
     const userMessage = messages[assistantIndex - 1];
     if (userMessage.role === 'user') {
-      this.inputArea.value = userMessage.content;
-      await this.handleSend();
+      await this.generateFromMessage(userMessage);
     }
   }
 
@@ -537,24 +573,29 @@ export class ChatPage {
     this.scrollToBottom();
   }
 
-  /** Edit a user message */
-  private async editMessage(messageId: string, newContent: string): Promise<void> {
-    // Remove this and all subsequent messages
+  /**
+   * Edit a user message in place. The MessageBubble has already updated its
+   * content + recorded the previous version; here we drop every later message
+   * (so the AI "forgets" the old reply) and regenerate from the edited version.
+   */
+  private async editMessage(messageId: string, _newContent: string): Promise<void> {
     const messages = Array.from(this.messageBubbles.values())
       .map(b => b['options'].message);
 
     const index = messages.findIndex(m => m.id === messageId);
     if (index < 0) return;
 
+    const userMessage = messages[index];
+
+    // Remove all messages that came after the edited one
     const toRemove = messages.slice(index + 1);
     for (const msg of toRemove) {
       this.messageBubbles.get(msg.id)?.getElement().remove();
       this.messageBubbles.delete(msg.id);
     }
 
-    // Re-send from edited message
-    this.inputArea.value = newContent;
-    await this.handleSend();
+    // Regenerate from the edited message (in place, keeps its version history)
+    await this.generateFromMessage(userMessage);
   }
 
   /** Delete a message */
@@ -564,6 +605,83 @@ export class ChatPage {
       bubble.getElement().remove();
       this.messageBubbles.delete(messageId);
     }
+  }
+
+  /** Reflect whether this chat has custom instructions on the header button */
+  private updateInstructionsBadge(): void {
+    if (!this.instructionsBtn) return;
+    const active = this.currentInstructions.trim().length > 0;
+    this.instructionsBtn.classList.toggle('active', active);
+    this.instructionsBtn.title = active
+      ? 'Custom instructions active — click to edit'
+      : 'Custom instructions for this chat';
+  }
+
+  /** Open the per-chat custom instructions editor modal */
+  private openInstructionsEditor(): void {
+    const overlay = createElement('div', { class: 'modal-overlay' });
+    const modal = createElement('div', { class: 'modal instructions-modal' });
+
+    const header = createElement('div', { class: 'modal-header' });
+    header.append(
+      createElement('h3', { class: 'modal-title', children: ['Custom Instructions'] }),
+      createElement('button', {
+        class: 'modal-close',
+        type: 'button',
+        'aria-label': 'Close',
+        children: [iconEl('close', 16)],
+        onClick: () => overlay.remove(),
+      })
+    );
+
+    const body = createElement('div', { class: 'modal-body' });
+    body.append(
+      createElement('p', { class: 'modal-desc', children: ['The AI reads these instructions with every message you send in this chat.'] }),
+      createElement('textarea', {
+        class: 'form-input instructions-textarea',
+        placeholder: 'e.g. Always answer in short, friendly sentences. Never reveal that you are an AI...',
+        value: this.currentInstructions,
+        rows: 6,
+      })
+    );
+    const textarea = body.querySelector('textarea') as HTMLTextAreaElement;
+
+    const footer = createElement('div', { class: 'modal-footer' });
+    footer.append(
+      createElement('button', {
+        class: 'btn btn-secondary',
+        type: 'button',
+        children: ['Clear'],
+        onClick: () => {
+          textarea.value = '';
+        },
+      }),
+      createElement('button', {
+        class: 'btn btn-secondary',
+        type: 'button',
+        children: ['Cancel'],
+        onClick: () => overlay.remove(),
+      }),
+      createElement('button', {
+        class: 'btn btn-primary',
+        type: 'button',
+        children: ['Save'],
+        onClick: async () => {
+          this.currentInstructions = textarea.value.trim();
+          overlay.remove();
+          // Persist; create a chat first if none exists yet.
+          if (!this.currentChatId) await this.newChat();
+          await this.saveCurrentChat();
+          this.updateInstructionsBadge();
+          this.showToast(this.currentInstructions ? 'Instructions saved' : 'Instructions cleared', 'success');
+        },
+      })
+    );
+
+    modal.append(header, body, footer);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    textarea.focus();
   }
 
   /** Scroll chat to bottom */
@@ -622,8 +740,18 @@ export class ChatPage {
     // Header
     const header = createElement('header', { class: 'chat-header' });
     const title = createElement('h1', { class: 'chat-title', children: ['New Chat'] });
+    const headerRight = createElement('div', { class: 'chat-header-right' });
+    this.instructionsBtn = createElement('button', {
+      class: 'instructions-btn',
+      type: 'button',
+      title: 'Custom instructions for this chat',
+      'aria-label': 'Custom instructions for this chat',
+      children: [iconEl('clipboard', 16)],
+      onClick: () => this.openInstructionsEditor(),
+    });
     const modelContainer = createElement('div', { class: 'model-selector-container' });
-    header.append(title, modelContainer);
+    headerRight.append(this.instructionsBtn, modelContainer);
+    header.append(title, headerRight);
 
     // Chat container
     this.chatContainer = createElement('div', { class: 'chat-container' });
