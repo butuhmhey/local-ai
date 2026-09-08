@@ -580,7 +580,8 @@ export class ChatPage {
   private async initModelSelector(): Promise<void> {
     this.modelSelector = createCompactModelSelector(
       this.currentModel?.id || '',
-      (model) => this.onModelChange(model)
+      (model) => this.onModelChange(model),
+      (model, onProgress) => this.downloadModelForUse(model, onProgress)
     );
 
     const selectorContainer = this.element.querySelector('.model-selector-container');

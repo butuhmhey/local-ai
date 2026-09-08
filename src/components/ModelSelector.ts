@@ -442,7 +442,17 @@ export class ModelSelector {
     }
   }
 
-  private selectModel(model: ModelInfo): void {
+  private async selectModel(model: ModelInfo): Promise<void> {
+    // If the model isn't downloaded yet and we have a download handler,
+    // ask the user to confirm the download FIRST — no silent multi-GB downloads.
+    if (!this.downloadedIds.has(model.id) && this.options.onDownload) {
+      this.close();
+      const ok = await requestModelDownload(model, this.options.onDownload);
+      if (!ok) return; // user cancelled or download failed
+      // Refresh the downloaded set so the model now shows as available
+      await this.refreshDownloadedStatus();
+    }
+
     this.options.selectedModelId = model.id;
     this.updateButtonText();
     this.updateListSelection();
@@ -505,12 +515,14 @@ function formatNumber(num: number): string {
 /** Create a compact model selector for chat header */
 export function createCompactModelSelector(
   selectedModelId: string,
-  onSelect: (model: ModelInfo) => void
+  onSelect: (model: ModelInfo) => void,
+  onDownload?: DownloadHandler
 ): ModelSelector {
   return new ModelSelector({
     selectedModelId,
     onSelect,
-    showDownload: false,
+    onDownload,
+    showDownload: !!onDownload,
     showDelete: false,
     placeholder: 'Model',
   });
