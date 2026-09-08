@@ -93,6 +93,8 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-08 | **VISUAL OVERHAUL**: Premium pass on "ew its so ugly" feedback — gradient brand buttons, layered depth shadows, frosted-glass header/chat-input/modals/toasts, sidebar active accent bar, glassmorphic feature cards, enhanced welcome/landing hero, better message bubbles. Fixed desktop blank-render bug (missing `.active` class). Added `.gitignore` + untracked node_modules | src/styles/variables.css, src/styles/components.css, .gitignore |
+| 2026-09-08 | **VISUAL POLISH**: Boost welcome feature-card contrast + icon accent color after screenshot review | src/styles/components.css |
 | 2026-09-08 | **DEPLOY**: App is LIVE on Render (user confirmed) — roadmap complete | render.yaml |
 | 2026-09-07 | **FEATURE**: Download-first model selection — picking an undownloaded model in chat now shows a confirmation modal (name, description, note, spec chips, "Download X MB" button) BEFORE selection, with live progress. No silent multi-GB downloads. Wired `onDownload` through ModelSelector → createCompactModelSelector → ChatPage. Verified via Playwright on desktop + mobile | src/components/ModelSelector.ts, src/pages/ChatPage.ts |
 | 2026-09-07 | **FIX**: Blank cream screen on iOS (no WebGPU) — WebLLM crashed at import time. Now lazy-loaded via dynamic import (6MB deferred), pinned so UI never blocks on it; added no-WebGPU fail-fast with clear toast + inline crash catcher in index.html | src/services/webllmEngine.ts, src/pages/ChatPage.ts, index.html |
@@ -172,6 +174,8 @@
 20. ✅ **Chat functional test** — Verified model select / typing / send / error handling via Playwright; fixed unhandled rejection on model-load failure
 21. ✅ **Download-first model gate** — Chat model selector asks to download a model BEFORE selecting it (confirm modal + live progress); no silent multi-GB downloads
 22. ✅ **Deploy to Render** — Live app deployed (user confirmed)
+23. ✅ **Visual overhaul (premium pass)** — gradients, glass, depth shadows, sidebar accent, glassmorphic feature cards; desktop blank-render bug fixed; `.gitignore` added
+24. ⏳ **Await user feedback** on the visual overhaul — may need further refinement (contrast, hero layout)
 
 ---
 
