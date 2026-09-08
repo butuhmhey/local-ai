@@ -330,9 +330,12 @@ export class MessageBubble {
 
     this.element.appendChild(dropdown);
 
-    // Close on outside click (one-time)
+    // Close on outside click (one-time). Ignore the click on the badge itself —
+    // that is the click that just OPENED this dropdown.
     const onDocClick = (e: MouseEvent) => {
-      if (!dropdown.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (this.versionBadge && (target === this.versionBadge || this.versionBadge.contains(target))) return;
+      if (!dropdown.contains(target)) {
         dropdown.remove();
         document.removeEventListener('click', onDocClick);
       }

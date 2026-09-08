@@ -1,6 +1,6 @@
 # Session Brief — Ember (formerly Local AI Chat)
 
-**Last Updated:** 2026-09-08 (Download-button failure UX fixed)  
+**Last Updated:** 2026-09-08 (Edit versioning, stop button, custom instructions)  
 **Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ + Chat Verified ✅ + Download-First Gate ✅ + **Visual Overhaul ✅** + **LIVE ✅**  
 **GitHub:** butuhmhey/local-ai  
 **Live App:** (Render deployment confirmed — URL TBD)  
@@ -93,6 +93,7 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-08 | **3 NEW CHAT FEATURES**: (1) **Edit message + version history** — hover pencil on user messages, in-place editing, version badge (v1/v2/vN) shown on edited messages with dropdown listing all versions + Restore button. AI forgets previous response and regenerates from edited message. (2) **Stop button** — red ⏹️ button replaces send button during streaming, interrupts generation immediately. (3) **Custom instructions per chat** — clipboard icon in chat header opens modal for per-chat system prompt, prepended to every context window. Verified 10/10 automated checks + visual screenshots | src/types/index.ts, src/utils/icons.ts, src/components/MessageBubble.ts, src/pages/ChatPage.ts, src/services/storageEngine.ts, src/styles/components.css |
 | 2026-09-08 | **RUNTIME AUDIT FIX (verified in-browser)**: Ran the app headlessly and clicked through. (1) **Every navigation rendered the page 2–3×** — navigate() set location.hash AND the hashchange listener called navigate() again → onShow ran 2–3× per nav (double IndexedDB reads). Refactored: navigate only sets hash, renderRoute is the single render point. Verified 1 mount per nav. (2) **Ctrl+K did nothing** — old selector '.model-search input' matched nothing AND focusing a hidden input can't work → now clicks the selector button (opens dropdown + focuses search). (3) **MessageBubble code blocks double-escaped** < > & → literal entities in code | src/main.ts, src/components/MessageBubble.ts |
 | 2026-09-08 | **DEEP AUDIT FIX (same bug classes)**: Hunted the whole codebase for the same failure-UX/unit bugs. Fixed: (1) ModelLibrary download progress double-scale (×100 again) + generic error → now surfaces WebGPU reason; (2) SettingsPage forceCompactAll always claimed "all compacted" despite failures → now counts real failures; (3) MemoryPage forceCompact always claimed success → now reflects result; (4) **MemoryPage memory view + Export always empty/failed** — read chat.memory which storage never populates → now fetches real memories/facts stores (verified showing real data in-browser); (5) ModelSelector dropdown Download/Delete buttons never reflected downloaded state (isDownloaded hardcoded false) | src/pages/ModelLibraryPage.ts, src/pages/SettingsPage.ts, src/pages/MemoryPage.ts, src/components/ModelSelector.ts |
 | 2026-09-08 | **DOWNLOAD-BUTTON FIX**: User reported "download model button dont work". Playwright proved the button WAS wired (click→progress→fail). Real cause: WebGPU unavailable → modal showed misleading generic "check your connection". Now the modal surfaces the ACTUAL reason (e.g. "No WebGPU adapter found... Open Ember in a desktop browser with WebGPU") and is actionable. Also fixed progress bar double-scaling (loadModel sends 0-100, renderProgress ×100 again → jumped to 100%) | src/components/DownloadPrompt.ts, src/pages/ChatPage.ts |
@@ -185,7 +186,10 @@
 26. ✅ **Download-button fix** — Button was wired correctly (verified via Playwright); failure UX was the real problem: no-WebGPU showed a misleading generic error. Now shows the actual reason + fix, and progress bar no longer jumps to 100%
 27. ✅ **Deep audit of same bug classes** — fixed 5 more: ModelLibrary progress double-scale + WebGPU reason, SettingsPage & MemoryPage false "compaction success", MemoryPage memory view/export reading never-populated chat.memory, ModelSelector downloaded-state buttons
 28. ✅ **Runtime audit (headless, verified in-browser)** — fixed double-navigation render (2–3× → 1×), dead Ctrl+K shortcut (now opens picker + focuses search), MessageBubble code-block double-escaping. Confirmed MemoryPage fix renders real data
-29. ⏳ **Await user feedback** — download button reported broken; root cause surfaced (likely no WebGPU on their browser). May need further refinement
+29. ✅ **Edit message + version history** — hover pencil on user messages, in-place editing, version badge (v1/v2/vN) with dropdown + Restore, AI regenerates from edited version. Verified 10/10 automated checks
+30. ✅ **Stop button** — red ⏹️ button during streaming interrupts generation immediately
+31. ✅ **Custom instructions per chat** — clipboard icon in chat header opens modal for per-chat system prompt, prepended to context window
+32. ⏳ **Await user feedback** — download button reported broken; root cause surfaced (likely no WebGPU on their browser). May need further refinement
 
 ---
 

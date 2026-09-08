@@ -252,8 +252,13 @@ export class ChatPage {
         });
       }
 
-      // Add current user message to context
-      context.push(userMessage);
+      // Add current user message to context. It was just persisted by the
+      // saveCurrentChat() above, so it is almost always already in the window —
+      // only push if the token budget culled it.
+      const hasUserMsg = context.some(m => m.id === userMessage.id);
+      if (!hasUserMsg) {
+        context.push(userMessage);
+      }
 
       // Stream response
       let fullResponse = '';
@@ -667,10 +672,11 @@ export class ChatPage {
         type: 'button',
         children: ['Save'],
         onClick: async () => {
+          // Create a chat first if none exists yet — newChat resets
+          // currentInstructions, so apply the value AFTER it runs.
+          if (!this.currentChatId) await this.newChat();
           this.currentInstructions = textarea.value.trim();
           overlay.remove();
-          // Persist; create a chat first if none exists yet.
-          if (!this.currentChatId) await this.newChat();
           await this.saveCurrentChat();
           this.updateInstructionsBadge();
           this.showToast(this.currentInstructions ? 'Instructions saved' : 'Instructions cleared', 'success');
