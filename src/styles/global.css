@@ -99,7 +99,7 @@ input, textarea, select {
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--border-focus);
-  box-shadow: var(--shadow-glow-sm);
+  box-shadow: var(--shadow-focus);
 }
 input::placeholder, textarea::placeholder {
   color: var(--text-muted);

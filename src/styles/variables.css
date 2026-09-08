@@ -43,21 +43,17 @@
   --accent-uncensored: #E11D48;
   --accent-uncensored-soft: rgba(225, 29, 72, 0.1);
 
-  /* Shadows — Soft & Warm */
-  --shadow-xs: 0 1px 2px rgba(41, 37, 36, 0.05);
-  --shadow-sm: 0 1px 3px rgba(41, 37, 36, 0.07), 0 1px 2px rgba(41, 37, 36, 0.04);
-  --shadow-md: 0 4px 16px -2px rgba(41, 37, 36, 0.1), 0 2px 4px -2px rgba(41, 37, 36, 0.05);
-  --shadow-lg: 0 12px 36px -4px rgba(41, 37, 36, 0.12), 0 4px 8px -4px rgba(41, 37, 36, 0.07);
-  --shadow-xl: 0 24px 56px -8px rgba(41, 37, 36, 0.16), 0 8px 16px -8px rgba(41, 37, 36, 0.08);
-  --shadow-glow: 0 0 0 3px rgba(217, 119, 6, 0.18), 0 4px 20px rgba(217, 119, 6, 0.15);
-  --shadow-glow-sm: 0 0 0 2px rgba(217, 119, 6, 0.15);
-  --shadow-inner: inset 0 1px 3px rgba(41, 37, 36, 0.06);
-  --shadow-float: 0 8px 32px -4px rgba(41, 37, 36, 0.14), 0 2px 8px -2px rgba(41, 37, 36, 0.06);
+  /* Shadows — Clean & Subtle */
+  --shadow-xs: 0 1px 2px rgba(41, 37, 36, 0.06);
+  --shadow-sm: 0 1px 3px rgba(41, 37, 36, 0.08);
+  --shadow-md: 0 4px 12px rgba(41, 37, 36, 0.08);
+  --shadow-lg: 0 8px 24px rgba(41, 37, 36, 0.1);
+  --shadow-xl: 0 16px 48px rgba(41, 37, 36, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(217, 119, 6, 0.2);
+  --shadow-inner: inset 0 1px 2px rgba(41, 37, 36, 0.06);
 
-  /* Gradients — disciplined warm tones, theme-aware */
-  --gradient-brand: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-hover));
-  --gradient-warm: linear-gradient(90deg, var(--accent-primary), var(--accent-warning));
-  --gradient-text: linear-gradient(120deg, var(--accent-primary), var(--accent-warning));
+  /* Solid brand color (no gradients — clean, not decorative) */
+  --brand-solid: var(--accent-primary);
 
   /* Overlay backdrop */
   --overlay: rgba(26, 22, 20, 0.4);
@@ -166,15 +162,13 @@
   --accent-uncensored: #FB7185;
   --accent-uncensored-soft: rgba(251, 113, 133, 0.12);
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 36px -4px rgba(0, 0, 0, 0.6), 0 4px 8px -4px rgba(0, 0, 0, 0.45);
-  --shadow-xl: 0 24px 56px -8px rgba(0, 0, 0, 0.7), 0 8px 16px -8px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 0 3px rgba(251, 191, 36, 0.22), 0 4px 20px rgba(251, 191, 36, 0.18);
-  --shadow-glow-sm: 0 0 0 2px rgba(251, 191, 36, 0.18);
-  --shadow-inner: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-float: 0 8px 32px -4px rgba(0, 0, 0, 0.65), 0 2px 8px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.32);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.44);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.52);
+  --shadow-focus: 0 0 0 3px rgba(251, 191, 36, 0.24);
+  --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.24);
 
   --scrollbar-track: transparent;
   --scrollbar-thumb: #4A4340;

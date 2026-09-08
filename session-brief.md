@@ -1,7 +1,7 @@
 # Session Brief — Ember (formerly Local AI Chat)
 
-**Last Updated:** 2026-09-08 (Edit versioning, stop button, custom instructions)  
-**Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ + Chat Verified ✅ + Download-First Gate ✅ + **Visual Overhaul ✅** + **LIVE ✅**  
+**Last Updated:** 2026-09-08 (Anti-vibe-coding CSS overhaul — gradients, glassmorphism, decorative animations stripped)  
+**Current Phase:** Phase 3 ✅ COMPLETE + Visual Rebrand ✅ + Chat Verified ✅ + Download-First Gate ✅ + **Visual Overhaul ✅** + **Anti-Vibe Pass ✅** + **LIVE ✅**  
 **GitHub:** butuhmhey/local-ai  
 **Live App:** (Render deployment confirmed — URL TBD)  
 **User:** Kasper Kal (kasper.kal@proton.me)
@@ -93,6 +93,7 @@
 
 | Time | Change | Files |
 |------|--------|-------|
+| 2026-09-08 | **ANTI-VIBE-CODING CSS OVERHAUL**: Stripped every glassmorphism (`backdrop-filter: blur`) effect across 7 components (header, chat input, toast, modal overlay, model dropdown, mobile tabbar, mobile chat input, welcome features, landing features, summary modal). Removed all `var(--gradient-brand)` from buttons/logos/avatars → solid `var(--accent-primary)`. Removed all `var(--gradient-warm)` from progress bars → solid accent. Removed decorative floating animation (`animation: float 5s`) from welcome icon + landing hero icon. Removed `.landing-glow` blurred radial gradient element entirely. Replaced landing page triple radial-gradient background with flat `var(--bg-primary)`. Replaced gradient-text `<em>` with solid `var(--accent-primary)`. Simplified shadows: removed glow/float variants, renamed `--shadow-glow-sm` → `--shadow-focus` across all files (variables.css, components.css, global.css). Removed complex multi-layer hover shadows on buttons + cards. All surfaces now solid backgrounds, no translucency. | src/styles/variables.css, src/styles/components.css, src/styles/global.css |
 | 2026-09-08 | **3 NEW CHAT FEATURES**: (1) **Edit message + version history** — hover pencil on user messages, in-place editing, version badge (v1/v2/vN) shown on edited messages with dropdown listing all versions + Restore button. AI forgets previous response and regenerates from edited message. (2) **Stop button** — red ⏹️ button replaces send button during streaming, interrupts generation immediately. (3) **Custom instructions per chat** — clipboard icon in chat header opens modal for per-chat system prompt, prepended to every context window. Verified 10/10 automated checks + visual screenshots | src/types/index.ts, src/utils/icons.ts, src/components/MessageBubble.ts, src/pages/ChatPage.ts, src/services/storageEngine.ts, src/styles/components.css |
 | 2026-09-08 | **RUNTIME AUDIT FIX (verified in-browser)**: Ran the app headlessly and clicked through. (1) **Every navigation rendered the page 2–3×** — navigate() set location.hash AND the hashchange listener called navigate() again → onShow ran 2–3× per nav (double IndexedDB reads). Refactored: navigate only sets hash, renderRoute is the single render point. Verified 1 mount per nav. (2) **Ctrl+K did nothing** — old selector '.model-search input' matched nothing AND focusing a hidden input can't work → now clicks the selector button (opens dropdown + focuses search). (3) **MessageBubble code blocks double-escaped** < > & → literal entities in code | src/main.ts, src/components/MessageBubble.ts |
 | 2026-09-08 | **DEEP AUDIT FIX (same bug classes)**: Hunted the whole codebase for the same failure-UX/unit bugs. Fixed: (1) ModelLibrary download progress double-scale (×100 again) + generic error → now surfaces WebGPU reason; (2) SettingsPage forceCompactAll always claimed "all compacted" despite failures → now counts real failures; (3) MemoryPage forceCompact always claimed success → now reflects result; (4) **MemoryPage memory view + Export always empty/failed** — read chat.memory which storage never populates → now fetches real memories/facts stores (verified showing real data in-browser); (5) ModelSelector dropdown Download/Delete buttons never reflected downloaded state (isDownloaded hardcoded false) | src/pages/ModelLibraryPage.ts, src/pages/SettingsPage.ts, src/pages/MemoryPage.ts, src/components/ModelSelector.ts |
@@ -190,6 +191,7 @@
 30. ✅ **Stop button** — red ⏹️ button during streaming interrupts generation immediately
 31. ✅ **Custom instructions per chat** — clipboard icon in chat header opens modal for per-chat system prompt, prepended to context window
 32. ⏳ **Await user feedback** — download button reported broken; root cause surfaced (likely no WebGPU on their browser). May need further refinement
+33. ✅ **Anti-vibe-coding CSS overhaul** — stripped all glassmorphism, gradient buttons, decorative animations, glow shadows. Solid backgrounds, clean shadows, no translucency. Build verified.
 
 ---
 
