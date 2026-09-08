@@ -5,6 +5,7 @@
 
 import { createElement } from '../utils/helpers.js';
 import { formatNumber } from '../utils/helpers.js';
+import { svgIcon, iconEl } from '../utils/icons.js';
 import { MemoryEngine } from '../services/memoryEngine.js';
 import type { MemoryStats } from '../types/index.js';
 
@@ -68,13 +69,13 @@ export class CompactIndicator {
       this.element.classList.add('compacting');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '⏳ Compacting...';
+        btn.innerHTML = svgIcon('refresh', 14) + '<span class="icon-spin">Compact</span>';
       }
     } else {
       this.element.classList.remove('compacting');
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '🗜️ Compact';
+        btn.innerHTML = svgIcon('refresh', 14) + '<span>Compact</span>';
       }
       this.updateDisplay();
     }
@@ -104,7 +105,7 @@ export class CompactIndicator {
     labels.append(usedLabel, totalLabel, percentLabel);
 
     // Warning badge
-    const warning = createElement('div', { class: 'compact-warning hidden', children: ['⚠️ Approaching context limit — consider compacting'] });
+    const warning = createElement('div', { class: 'compact-warning hidden', children: ['Approaching context limit — consider compacting'] });
 
     // Details (collapsible)
     let details: HTMLElement | null = null;
@@ -118,7 +119,7 @@ export class CompactIndicator {
     const btn = createElement('button', {
       class: 'compact-btn',
       type: 'button',
-      children: ['🗜️ Compact'],
+      children: [iconEl('refresh', 14), 'Compact'],
       'aria-label': 'Compact conversation history',
       onClick: () => this.handleCompact(),
     });

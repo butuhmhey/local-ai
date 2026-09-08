@@ -3,6 +3,7 @@
  */
 
 import { createElement, formatBytes, formatNumber } from '../utils/helpers.js';
+import { iconEl } from '../utils/icons.js';
 import { ModelSelector } from '../components/ModelSelector.js';
 import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
 import { cacheEngine } from '../services/cacheEngine.js';
@@ -155,7 +156,7 @@ export class ModelLibraryPage {
 
     if (models.length === 0) {
       const empty = createElement('div', { class: 'model-library-empty', children: [
-        createElement('div', { class: 'empty-icon', children: ['🔍'] }),
+        createElement('div', { class: 'empty-icon', children: [iconEl('search', 28)] }),
         createElement('h3', { children: ['No models found'] }),
         createElement('p', { children: ['Try adjusting your filters or search term'] }),
       ]});
@@ -207,15 +208,15 @@ export class ModelLibraryPage {
     // Specs
     const specs = createElement('div', { class: 'model-card-specs' });
     const specItems = [
-      { label: 'VRAM', value: `${model.ramGB} GB`, icon: '💾' },
-      { label: 'Context', value: formatNumber(model.contextWindow ?? 4096), icon: '📏' },
-      { label: 'Size', value: formatBytes((model.downloadSizeMB ?? 0) * 1024 * 1024), icon: '📦' },
-      { label: 'Architecture', value: (model as any).architecture || 'Transformer', icon: '🏗️' },
+      { label: 'VRAM', value: `${model.ramGB} GB`, icon: 'chip' },
+      { label: 'Context', value: formatNumber(model.contextWindow ?? 4096), icon: 'ruler' },
+      { label: 'Size', value: formatBytes((model.downloadSizeMB ?? 0) * 1024 * 1024), icon: 'package' },
+      { label: 'Architecture', value: (model as any).architecture || 'Transformer', icon: 'layers' },
     ];
     for (const spec of specItems) {
       const specEl = createElement('div', { class: 'spec-item' });
       specEl.append(
-        createElement('span', { class: 'spec-icon', children: [spec.icon] }),
+        createElement('span', { class: 'spec-icon', children: [iconEl(spec.icon, 16)] }),
         createElement('span', { class: 'spec-label', children: [spec.label] }),
         createElement('span', { class: 'spec-value', children: [spec.value] })
       );
@@ -229,7 +230,7 @@ export class ModelLibraryPage {
       const downloadBtn = createElement('button', {
         class: 'btn btn-primary download-btn',
         type: 'button',
-        children: ['⬇️ Download'],
+        children: [iconEl('download', 16), 'Download'],
         onClick: () => this.downloadModel(model),
       });
       actions.appendChild(downloadBtn);
@@ -237,13 +238,13 @@ export class ModelLibraryPage {
       const loadBtn = createElement('button', {
         class: 'btn btn-primary load-btn',
         type: 'button',
-        children: ['🚀 Load in Chat'],
+        children: [iconEl('arrowRight', 16), 'Load in Chat'],
         onClick: () => this.loadModelInChat(model),
       });
       const deleteBtn = createElement('button', {
         class: 'btn btn-secondary delete-btn',
         type: 'button',
-        children: ['🗑️ Remove'],
+        children: [iconEl('trash', 16), 'Remove'],
         onClick: () => this.deleteModel(model),
       });
       actions.append(loadBtn, deleteBtn);

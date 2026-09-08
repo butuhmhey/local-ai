@@ -3,6 +3,7 @@
  */
 
 import { createElement, formatBytes, downloadFile, generateId, formatDate } from '../utils/helpers.js';
+import { iconEl, svgIcon } from '../utils/icons.js';
 import { ImportDropzone, type FilePreview } from '../components/ImportDropzone.js';
 import { importEngine, type ImportPreview } from '../services/importEngine.js';
 import { storageEngine } from '../services/storageEngine.js';
@@ -114,7 +115,7 @@ export class ImportExportPage {
     const exportBtn = createElement('button', {
       type: 'submit',
       class: 'btn btn-primary export-btn',
-      children: ['📤 Export Chat'],
+      children: [iconEl('upload', 16), 'Export Chat'],
     });
 
     exportForm.append(chatGroup, formatGroup, optionsGroup, exportBtn);
@@ -187,7 +188,7 @@ export class ImportExportPage {
 
     const btn = form.querySelector('.export-btn') as HTMLButtonElement;
     btn.disabled = true;
-    btn.textContent = 'Exporting...';
+    btn.innerHTML = svgIcon('upload', 16) + '<span>Exporting…</span>';
 
     try {
       const chat = await storageEngine.getChat(chatId);
@@ -234,7 +235,7 @@ export class ImportExportPage {
       this.showToast('Export failed', 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = '📤 Export Chat';
+      btn.innerHTML = svgIcon('upload', 16) + '<span>Export Chat</span>';
     }
   }
 

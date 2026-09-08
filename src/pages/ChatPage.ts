@@ -3,6 +3,7 @@
  */
 
 import { createElement, generateId, formatTime, escapeHtml, truncate } from '../utils/helpers.js';
+import { iconEl, svgIcon } from '../utils/icons.js';
 import { MessageBubble, createStreamingBubble } from '../components/MessageBubble.js';
 import { ModelSelector, createCompactModelSelector } from '../components/ModelSelector.js';
 import { CompactIndicator } from '../components/CompactIndicator.js';
@@ -204,7 +205,7 @@ export class ChatPage {
 
     this.isStreaming = true;
     this.sendBtn.disabled = true;
-    this.sendBtn.textContent = '⏹️ Stop';
+    this.sendBtn.innerHTML = svgIcon('stop', 16) + '<span>Stop</span>';
     this.inputArea.disabled = true;
 
     this.abortController = new AbortController();
@@ -235,7 +236,7 @@ export class ChatPage {
       streamingBubble.complete();
       this.isStreaming = false;
       this.sendBtn.disabled = false;
-      this.sendBtn.textContent = '➤ Send';
+      this.sendBtn.innerHTML = svgIcon('send', 16) + '<span>Send</span>';
       this.inputArea.disabled = false;
       this.inputArea.focus();
 
@@ -264,7 +265,7 @@ export class ChatPage {
       }
       this.isStreaming = false;
       this.sendBtn.disabled = false;
-      this.sendBtn.textContent = '➤ Send';
+      this.sendBtn.innerHTML = svgIcon('send', 16) + '<span>Send</span>';
       this.inputArea.disabled = false;
       this.inputArea.focus();
     } finally {
@@ -694,7 +695,7 @@ export class ChatPage {
     this.sendBtn = createElement('button', {
       class: 'btn btn-primary send-btn',
       type: 'button',
-      children: ['➤ Send'],
+      children: [iconEl('send', 16), 'Send'],
       onClick: () => this.handleSend(),
     });
 

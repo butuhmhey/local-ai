@@ -209,6 +209,8 @@ input::placeholder, textarea::placeholder {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+/* Icon loading spinner — animate an SVG inside a button */
+.icon-spin svg { animation: spin 0.9s linear infinite; }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

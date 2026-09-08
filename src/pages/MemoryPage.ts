@@ -4,6 +4,7 @@
  */
 
 import { createElement, formatNumber, formatRelativeTime, escapeHtml } from '../utils/helpers.js';
+import { iconEl } from '../utils/icons.js';
 import { createMemoryCardSet, MemoryCard } from '../components/MemoryCard.js';
 import { memoryEngine } from '../services/memoryEngine.js';
 import { storageEngine } from '../services/storageEngine.js';
@@ -64,17 +65,17 @@ export class MemoryPage {
 
     const exportBtn = createElement('button', {
       class: 'btn btn-secondary',
-      children: ['📤 Export Memory'],
+      children: [iconEl('upload', 16), 'Export Memory'],
       onClick: () => this.exportMemory(),
     });
     const compactBtn = createElement('button', {
       class: 'btn btn-primary',
-      children: ['🗜️ Force Compact'],
+      children: [iconEl('refresh', 16), 'Force Compact'],
       onClick: () => this.forceCompact(),
     });
     const clearBtn = createElement('button', {
       class: 'btn btn-danger',
-      children: ['🗑️ Clear Memory'],
+      children: [iconEl('trash', 16), 'Clear Memory'],
       onClick: () => this.clearMemory(),
     });
 
@@ -188,18 +189,18 @@ export class MemoryPage {
     this.statsContainer.innerHTML = '';
 
     const statCards = [
-      { label: 'Total Tokens', value: formatNumber(stats.totalTokens), icon: '📊', class: 'tokens' },
-      { label: 'Recent Messages (L0)', value: stats.level0Count, icon: '💬', class: 'level0' },
-      { label: 'Summaries (L1)', value: stats.level1Count, icon: '📝', class: 'level1' },
-      { label: 'Meta-Summaries (L2)', value: stats.level2Count, icon: '📋', class: 'level2' },
-      { label: 'Extracted Facts', value: stats.factCount, icon: '🧠', class: 'facts' },
-      { label: 'Compression Ratio', value: `${stats.compressionRatio.toFixed(1)}x`, icon: '🗜️', class: 'ratio' },
+      { label: 'Total Tokens', value: formatNumber(stats.totalTokens), icon: 'database', class: 'tokens' },
+      { label: 'Recent Messages (L0)', value: stats.level0Count, icon: 'message', class: 'level0' },
+      { label: 'Summaries (L1)', value: stats.level1Count, icon: 'file', class: 'level1' },
+      { label: 'Meta-Summaries (L2)', value: stats.level2Count, icon: 'layers', class: 'level2' },
+      { label: 'Extracted Facts', value: stats.factCount, icon: 'target', class: 'facts' },
+      { label: 'Compression Ratio', value: `${stats.compressionRatio.toFixed(1)}x`, icon: 'gauge', class: 'ratio' },
     ];
 
     for (const stat of statCards) {
-      const card = createElement('div', { class: `stat-card ${stat.class}` });
+      const card = createElement('div', { class: `stat-card stat-${stat.class}` });
       card.append(
-        createElement('div', { class: 'stat-icon', children: [stat.icon] }),
+        createElement('div', { class: 'stat-icon', children: [iconEl(stat.icon, 18)] }),
         createElement('div', { class: 'stat-info', children: [
           createElement('span', { class: 'stat-value', children: [stat.value] }),
           createElement('span', { class: 'stat-label', children: [stat.label] }),

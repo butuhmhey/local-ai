@@ -4,6 +4,7 @@
  */
 
 import { createElement, formatBytes, escapeHtml } from '../utils/helpers.js';
+import { iconEl } from '../utils/icons.js';
 import { detectFormat, getSupportedFormats, validateMessages } from '../utils/formatDetector.js';
 import { ImportEngine, type ImportPreview, type ImportFile, type ImportResultExtended } from '../services/importEngine.js';
 import type { ChatFormat, ChatSession, ChatMessage } from '../types/index.js';
@@ -107,7 +108,7 @@ export class ImportDropzone {
     this.dropArea = createElement('div', {
       class: 'drop-area',
       children: [
-        createElement('div', { class: 'drop-icon', children: ['📁'] }),
+        createElement('div', { class: 'drop-icon', children: [iconEl('folder', 32)] }),
         createElement('div', { class: 'drop-text', children: ['Drag & drop chat export files here'] }),
         createElement('div', { class: 'drop-hint', children: ['or'] }),
         createElement('button', {

@@ -55,6 +55,20 @@
 4. **Type Safety**: Strict TypeScript — no `any` unless absolutely necessary
 5. **CSS**: Use CSS custom properties from `variables.css` — no hardcoded values
 
+### Premium Design Doctrine (Senior PM Standard — applies to ALL UI work)
+This is the design voice. Every screen must read as shipped by a mature product team, never vibe-coded.
+1. **Spacing rhythm**: Strict 4/8-point scale for all margins, padding, gaps. Never invent random values (6/10/14/26/44px are off-scale). All spacing via `--spacing-*` tokens.
+2. **Typography system**: One heading font, one body font, a fixed type ramp (see `--font-size-*`). Apply without improvisation. Body never over/under-weighted. Consistent text-block spacing.
+3. **Disciplined palette**: Small warm palette (Ember amber / stone / cream) + semantic accents only. No neon, no purple, NO sparkles (user rule). Every accent reinforces hierarchy.
+4. **One design language**: Every button/card/input/modal/nav shares radius, shadow, padding, alignment. No mixing radiuses/shadows.
+5. **Subtle, intentional interaction**: Hover never distorts layout. Timing feels natural. No decoration-only motion. Every interactive element must actually work.
+6. **Grid discipline**: Content aligns cleanly; nothing drifts or wobbles; balanced sections; no random stacking; no over-centered content.
+7. **Loading states everywhere**: Every delay has a loading state — buttons shift to spinners, data-heavy areas use skeletons. Content never pops in abruptly.
+8. **Grounded copy**: Specific, real, no generic hero lines, no filler, no fake testimonials, correct footer. 
+9. **Technical fundamentals complete**: page title, meta description, OG tags, favicon, social links, accessible, mobile == desktop.
+10. **Actively remove vibe-code signals**: emoji as decoration, sparkles, purple gradients, fake testimonials, unintentional shadows, inconsistent spacing, mismatched radiuses, generic hero lines, broken responsiveness, missing loading states, chaotic animation. Catch and revise before presenting.
+11. **Icons**: Prefer inline SVG or clean typographic glyphs (`▸` `×` `⌄`) over emoji. If an emoji has zero semantic value as an icon, remove it.
+
 ### Code Patterns
 - **Services**: Classes with clear public APIs, instantiated once in `main.ts`
 - **Pages**: Classes that receive services via constructor, render into route outlet

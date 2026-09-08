@@ -4,6 +4,7 @@
  */
 
 import { createElement, formatTime, escapeHtml } from '../utils/helpers.js';
+import { iconEl } from '../utils/icons.js';
 import type { Message } from '../types/index.js';
 
 export interface MessageBubbleOptions {
@@ -107,7 +108,7 @@ export class MessageBubble {
   /** Set error state */
   setError(error: string): void {
     this.element.classList.add('error');
-    this.updateContent(`⚠️ ${escapeHtml(error)}`);
+    this.updateContent(escapeHtml(error));
   }
 
   private createElement(): HTMLElement {
@@ -125,7 +126,7 @@ export class MessageBubble {
       children: [
         createElement('span', {
           class: 'avatar-icon',
-          children: [isUser ? '👤' : isSystem ? '⚙️' : '🤖'],
+          children: [iconEl(isUser ? 'user' : isSystem ? 'gear' : 'flame', 16)],
         }),
       ],
     });
@@ -170,7 +171,7 @@ export class MessageBubble {
         class: 'action-btn copy-btn',
         title: 'Copy message',
         'aria-label': 'Copy message',
-        children: ['📋'],
+        children: [iconEl('copy', 16)],
         onClick: () => this.handleCopy(),
       });
       container.appendChild(copyBtn);
@@ -180,7 +181,7 @@ export class MessageBubble {
         class: 'action-btn regen-btn',
         title: 'Regenerate response',
         'aria-label': 'Regenerate response',
-        children: ['🔄'],
+        children: [iconEl('refresh', 16)],
         onClick: () => this.handleRegenerate(),
       });
       container.appendChild(regenBtn);
@@ -192,7 +193,7 @@ export class MessageBubble {
         class: 'action-btn edit-btn',
         title: 'Edit message',
         'aria-label': 'Edit message',
-        children: ['✏️'],
+        children: [iconEl('edit', 16)],
         onClick: () => this.startEdit(),
       });
       container.appendChild(editBtn);
@@ -203,7 +204,7 @@ export class MessageBubble {
       class: 'action-btn delete-btn',
       title: 'Delete message',
       'aria-label': 'Delete message',
-      children: ['🗑️'],
+      children: [iconEl('trash', 16)],
       onClick: () => this.handleDelete(),
     });
     container.appendChild(deleteBtn);
@@ -222,14 +223,14 @@ export class MessageBubble {
         class: 'action-btn save-btn',
         title: 'Save',
         'aria-label': 'Save changes',
-        children: ['✓'],
+        children: [iconEl('check', 16)],
         onClick: () => this.saveEdit(),
       });
       const cancelBtn = createElement('button', {
         class: 'action-btn cancel-btn',
         title: 'Cancel',
         'aria-label': 'Cancel editing',
-        children: ['✕'],
+        children: [iconEl('close', 16)],
         onClick: () => this.cancelEdit(),
       });
       actions.append(saveBtn, cancelBtn);

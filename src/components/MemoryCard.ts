@@ -4,6 +4,7 @@
  */
 
 import { createElement, formatRelativeTime, formatNumber, escapeHtml, truncate } from '../utils/helpers.js';
+import { iconEl } from '../utils/icons.js';
 import type { MemoryFact, MemorySummary, MemoryLayer } from '../types/index.js';
 
 export interface MemoryCardOptions {
@@ -203,7 +204,7 @@ export class MemoryCard {
       const editBtn = createElement('button', {
         class: 'action-btn edit-btn',
         'aria-label': 'Edit fact',
-        children: ['✏️'],
+        children: [iconEl('edit', 16)],
         onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.editFact(fact);
@@ -213,7 +214,7 @@ export class MemoryCard {
       const deleteBtn = createElement('button', {
         class: 'action-btn delete-btn',
         'aria-label': 'Delete fact',
-        children: ['🗑️'],
+        children: [iconEl('trash', 16)],
         onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.deleteFact(fact);
@@ -265,7 +266,7 @@ export class MemoryCard {
       const viewBtn = createElement('button', {
         class: 'action-btn view-btn',
         'aria-label': 'View full summary',
-        children: ['👁️'],
+        children: [iconEl('target', 16)],
         onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.viewSummary(summary);
@@ -275,7 +276,7 @@ export class MemoryCard {
       const deleteBtn = createElement('button', {
         class: 'action-btn delete-btn',
         'aria-label': 'Delete summary',
-        children: ['🗑️'],
+        children: [iconEl('trash', 16)],
         onClick: (e: MouseEvent) => {
           e.stopPropagation();
           this.deleteSummary(summary);

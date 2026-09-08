@@ -3,6 +3,7 @@
  */
 
 import { createElement, formatBytes } from '../utils/helpers.js';
+import { iconEl, svgIcon } from '../utils/icons.js';
 import { themeEngine } from '../services/themeEngine.js';
 import { cacheEngine } from '../services/cacheEngine.js';
 import { storageEngine } from '../services/storageEngine.js';
@@ -79,7 +80,7 @@ export class SettingsPage {
 
   private createThemeSection(): HTMLElement {
     const section = createElement('section', { class: 'settings-section' });
-    section.appendChild(createElement('h2', { children: ['🎨 Appearance'] }));
+    section.appendChild(createElement('h2', { children: ['Appearance'] }));
 
     // Theme selector
     const themeGroup = createElement('div', { class: 'setting-group' });
@@ -91,9 +92,9 @@ export class SettingsPage {
         value: this.settings.theme,
         onChange: (e: Event) => this.updateSetting('theme', (e.target as HTMLSelectElement).value as 'light' | 'dark' | 'auto'),
         children: [
-          createElement('option', { value: 'light', children: ['☀️ Light'] }),
-          createElement('option', { value: 'dark', children: ['🌙 Dark'] }),
-          createElement('option', { value: 'auto', children: ['🖥️ System (Auto)'] }),
+          createElement('option', { value: 'light', children: ['Light'] }),
+          createElement('option', { value: 'dark', children: ['Dark'] }),
+          createElement('option', { value: 'auto', children: ['System (Auto)'] }),
         ],
       })
     );
@@ -104,7 +105,7 @@ export class SettingsPage {
 
   private createChatSection(): HTMLElement {
     const section = createElement('section', { class: 'settings-section' });
-    section.appendChild(createElement('h2', { children: ['💬 Chat'] }));
+    section.appendChild(createElement('h2', { children: ['Chat'] }));
 
     // Default model
     const modelGroup = createElement('div', { class: 'setting-group' });
@@ -145,7 +146,7 @@ export class SettingsPage {
 
   private createMemorySection(): HTMLElement {
     const section = createElement('section', { class: 'settings-section' });
-    section.appendChild(createElement('h2', { children: ['🧠 Memory & Compaction'] }));
+    section.appendChild(createElement('h2', { children: ['Memory & Compaction'] }));
 
     // Auto-compact toggle
     const autoCompactGroup = createElement('div', { class: 'setting-group checkbox-group' });
@@ -188,7 +189,7 @@ export class SettingsPage {
     const forceCompactBtn = createElement('button', {
       class: 'btn btn-secondary force-compact-btn',
       id: 'force-compact-btn',
-      children: ['🗜️ Compact All Conversations Now'],
+      children: [iconEl('refresh', 16), 'Compact All Conversations Now'],
       onClick: () => this.forceCompactAll(),
     });
     forceCompactGroup.appendChild(forceCompactBtn);
@@ -199,7 +200,7 @@ export class SettingsPage {
 
   private createModelsSection(): HTMLElement {
     const section = createElement('section', { class: 'settings-section' });
-    section.appendChild(createElement('h2', { children: ['🤖 Models'] }));
+    section.appendChild(createElement('h2', { children: ['Models'] }));
 
     // Auto-download
     const autoDownloadGroup = createElement('div', { class: 'setting-group checkbox-group' });
@@ -220,7 +221,7 @@ export class SettingsPage {
     cacheGroup.append(
       createElement('button', {
         class: 'btn btn-warning',
-        children: ['🗑️ Clear Model Cache'],
+        children: [iconEl('trash', 16), 'Clear Model Cache'],
         onClick: () => this.clearModelCache(),
       }),
       createElement('span', { class: 'setting-hint', id: 'cache-size', children: ['Cached models: calculating...'] })
@@ -232,14 +233,14 @@ export class SettingsPage {
 
   private createDataSection(): HTMLElement {
     const section = createElement('section', { class: 'settings-section' });
-    section.appendChild(createElement('h2', { children: ['💾 Data Management'] }));
+    section.appendChild(createElement('h2', { children: ['Data Management'] }));
 
     // Export all data
     const exportGroup = createElement('div', { class: 'setting-group' });
     exportGroup.append(
       createElement('button', {
         class: 'btn btn-secondary',
-        children: ['📤 Export All Data (JSON)'],
+        children: [iconEl('upload', 16), 'Export All Data (JSON)'],
         onClick: () => this.exportAllData(),
       }),
       createElement('span', { class: 'setting-hint', children: ['Download complete backup of chats, memory, and settings'] })
@@ -258,7 +259,7 @@ export class SettingsPage {
     importGroup.append(
       createElement('button', {
         class: 'btn btn-secondary',
-        children: ['📥 Import Data (JSON)'],
+        children: [iconEl('download', 16), 'Import Data (JSON)'],
         onClick: () => fileInput.click(),
       }),
       fileInput,
@@ -271,7 +272,7 @@ export class SettingsPage {
       createElement('h4', { children: ['Danger Zone'] }),
       createElement('button', {
         class: 'btn btn-danger',
-        children: ['🗑️ Clear ALL Data'],
+        children: [iconEl('alert', 16), 'Clear ALL Data'],
         onClick: () => this.clearAllData(),
       }),
       createElement('span', { class: 'setting-hint', children: ['Permanently delete all chats, memory, and settings'] })
@@ -283,7 +284,7 @@ export class SettingsPage {
 
   private createAboutSection(): HTMLElement {
     const section = createElement('section', { class: 'settings-section' });
-    section.appendChild(createElement('h2', { children: ['ℹ️ About'] }));
+    section.appendChild(createElement('h2', { children: ['About'] }));
 
     const info = createElement('div', { class: 'about-info' });
     info.append(
@@ -377,7 +378,7 @@ export class SettingsPage {
     const btn = this.element.querySelector('#force-compact-btn') as HTMLButtonElement;
     if (!btn) return;
     btn.disabled = true;
-    btn.textContent = 'Compacting...';
+    btn.innerHTML = svgIcon('refresh', 16) + '<span>Compacting…</span>';
 
     try {
       const chats = await storageEngine.getAllChats();
@@ -391,7 +392,7 @@ export class SettingsPage {
       this.showToast('Compaction failed', 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = '🗜️ Compact All Conversations Now';
+      btn.innerHTML = svgIcon('refresh', 16) + '<span>Compact All Conversations Now</span>';
     }
   }
 
@@ -443,7 +444,7 @@ export class SettingsPage {
   }
 
   private async clearAllData(): Promise<void> {
-    if (!confirm('⚠️ THIS WILL DELETE EVERYTHING: all chats, memory, settings, and cached models. Are you absolutely sure?')) return;
+    if (!confirm('This will permanently delete everything: all chats, memory, settings, and cached models. Are you absolutely sure you want to continue?')) return;
     if (!confirm('Final confirmation: Type "DELETE" in the next prompt to confirm.')) return;
 
     const input = prompt('Type DELETE to confirm:');

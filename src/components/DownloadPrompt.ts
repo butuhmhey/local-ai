@@ -61,11 +61,11 @@ export function requestModelDownload(
     const specs = createElement('div', { class: 'download-prompt-specs' });
     specs.append(
       createElement('span', { class: 'download-prompt-chip', children: [
-        `📦 ${formatBytes((model.downloadSizeMB ?? 0) * 1024 * 1024)}`,
+        formatBytes((model.downloadSizeMB ?? 0) * 1024 * 1024),
       ]}),
-      createElement('span', { class: 'download-prompt-chip', children: [`💾 ${model.ramGB} GB VRAM`] }),
+      createElement('span', { class: 'download-prompt-chip', children: [`${model.ramGB} GB VRAM`] }),
       createElement('span', { class: 'download-prompt-chip', children: [
-        `📏 ${formatNumber(model.contextWindow ?? 4096)} ctx`,
+        `${formatNumber(model.contextWindow ?? 4096)} ctx`,
       ]})
     );
 

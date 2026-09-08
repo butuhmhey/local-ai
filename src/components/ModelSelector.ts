@@ -4,6 +4,7 @@
  */
 
 import { createElement, formatBytes } from '../utils/helpers.js';
+import { iconEl } from '../utils/icons.js';
 import { modelRegistry, type ModelInfo } from '../models/modelRegistry.js';
 import { storageEngine } from '../services/storageEngine.js';
 import { requestModelDownload, type DownloadHandler } from './DownloadPrompt.js';
@@ -375,7 +376,7 @@ export class ModelSelector {
         class: 'model-action-btn download-btn',
         title: 'Download model',
         'aria-label': `Download ${model.name}`,
-        children: ['⬇️'],
+        children: [iconEl('download', 16)],
         onClick: (e: MouseEvent) => {
           e.stopPropagation();
           if (this.options.onDownload) this.options.onDownload(model);
@@ -389,7 +390,7 @@ export class ModelSelector {
         class: 'model-action-btn delete-btn',
         title: 'Delete cached model',
         'aria-label': `Delete ${model.name}`,
-        children: ['🗑️'],
+        children: [iconEl('trash', 16)],
         onClick: (e: MouseEvent) => {
           e.stopPropagation();
           if (this.options.onDelete) this.options.onDelete(model);
